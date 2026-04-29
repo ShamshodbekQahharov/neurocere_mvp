@@ -175,64 +175,6 @@ child        → Faqat o'yinlar
 
 ---
 
-## 📁 LOYIHA PAPKA TUZILMASI
-
-```
-neurocare-mvp/
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── supabase.ts
-│   │   ├── controllers/
-│   │   │   ├── auth.controller.ts
-│   │   │   ├── children.controller.ts
-│   │   │   ├── reports.controller.ts
-│   │   │   ├── sessions.controller.ts
-│   │   │   ├── messages.controller.ts
-│   │   │   └── ai.controller.ts
-│   │   ├── middleware/
-│   │   │   ├── auth.middleware.ts
-│   │   │   └── validate.middleware.ts
-│   │   ├── routes/
-│   │   │   ├── auth.routes.ts
-│   │   │   ├── children.routes.ts
-│   │   │   ├── reports.routes.ts
-│   │   │   ├── sessions.routes.ts
-│   │   │   ├── messages.routes.ts
-│   │   │   └── ai.routes.ts
-│   │   ├── services/
-│   │   │   ├── ai.service.ts
-│   │   │   └── notification.service.ts
-│   │   ├── types/
-│   │   │   └── index.ts
-│   │   └── index.ts
-│   ├── .env
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── frontend/
-│   ├── src/
-│   │   ├── apps/
-│   │   │   ├── doctor/         ← Doktor paneli
-│   │   │   ├── parent/         ← Ota-ona paneli
-│   │   │   └── child/          ← Bola o'yinlari
-│   │   ├── components/         ← Umumiy komponentlar
-│   │   ├── hooks/              ← Custom hooks
-│   │   ├── services/           ← API chaqiruvlar
-│   │   ├── store/              ← Global state
-│   │   └── types/              ← TypeScript tiplar
-│   └── package.json
-│
-├── database/
-│   └── schema.sql              ← DB yaratish uchun SQL
-│
-├── .gitignore
-└── README.md
-```
-
----
-
 ## 🔌 API ENDPOINTLAR
 
 ### Auth
@@ -249,8 +191,8 @@ GET    /api/children              ← Ro'yxat (doktor uchun)
 POST   /api/children              ← Yangi bola qo'shish
 GET    /api/children/:id          ← Bitta bola profili
 PUT    /api/children/:id          ← Profilni yangilash
-GET    /api/children/:id/reports  ← Bola hisobotlari
-GET    /api/children/:id/progress ← Rivojlanish grafigi
+GET    /api/children/:id/progress ← Rivojlanish statistikasi
+DELETE /api/children/:id          ← Profilni o'chirish
 ```
 
 ### Hisobotlar
@@ -369,10 +311,15 @@ export async function parentChatbot(
 ✅ Faza 0 — Toollar o'rnatildi
    Node.js, VSCode, GitHub, Supabase, Vercel tayyor
 
-🔄 Faza 1 — Backend (hozir shu yerda)
-   Express server, Auth tizimi, DB jadvallar
+✅ Faza 1 — Backend (hozir shu yerda)
+    Express server, Auth tizimi, DB jadvallar
+    ✅ 1-kun: Toollar o'rnatildi
+    ✅ 2-kun: Express server + papka tuzilmasi
+    ✅ 3-kun: Supabase + 11 ta jadval
+    ✅ 4-kun: Auth tizimi (register/login/logout/getMe)
+    ✅ 5-kun: Children API + xato boshqarish
 
-⏳ Faza 2 — Doktor + Ota-ona UI
+🔄 Faza 2 — Doktor + Ota-ona UI
 ⏳ Faza 3 — Bola O'yinlari
 ⏳ Faza 4 — Test + Deploy
 ```
@@ -396,7 +343,7 @@ export async function parentChatbot(
 3. Kechagi to'xtagan joyni ayt
 
 ### Yangi vazifa olishda
-1. Kichik bo'lakka bo'l
+1. Kichik-bo'lakka bo'l
 2. Birinchi bo'lakni so'ra
 3. Test qil
 4. Keyingisiga o't

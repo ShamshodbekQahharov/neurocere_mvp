@@ -4,6 +4,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { supabaseAdmin } from './config/supabase';
 import authRoutes from './routes/auth.routes';
+import childrenRoutes from './routes/children.routes';
+import { notFoundHandler, errorHandler } from './middleware/error.middleware';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -38,13 +40,16 @@ app.use(
 // Auth routes
 app.use('/api/auth', authRoutes);
 
+// Children routes
+app.use('/api/children', childrenRoutes);
+
 // Health check endpoint with DB connectivity test
 app.get('/api/health', async (req: Request, res: Response) => {
   let databaseStatus = 'disconnected';
   
   try {
     // Test database connectivity with a simple query
-    const { data, error, count } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('users')
       .select('*', { count: 'exact', head: true });
     
@@ -85,32 +90,10 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // 404 Handler - catch all undefined routes
-app.use((req: Request, res: Response) => {
-  return res.status(404).json({
-    success: false,
-    error: 'Endpoint not found',
-    path: req.originalUrl,
-  });
-});
+app.use(notFoundHandler);
 
 // Global Error Handler
-app.use(
-  (
-    err: Error,
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    console.error('Error:', err.message);
-    console.error('Stack:', err.stack);
-
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error',
-      message: process.env.NODE_ENV === 'development' ? err.message : undefined,
-    });
-  }
-);
+app.use(errorHandler);
 
 // Start Server
 app.listen(PORT, () => {
