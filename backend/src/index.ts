@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { supabaseAdmin } from './config/supabase';
+import authRoutes from './routes/auth.routes';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -33,6 +34,9 @@ app.use(
 );
 
 // API Routes
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint with DB connectivity test
 app.get('/api/health', async (req: Request, res: Response) => {
