@@ -10,6 +10,8 @@ import childrenRoutes from './routes/children.routes';
 import reportsRoutes from './routes/reports.routes';
 import messagesRoutes from './routes/messages.routes';
 import notificationsRoutes from './routes/notifications.routes';
+import aiRoutes from './routes/ai.routes';
+import { generalRateLimit } from './middleware/rateLimit.middleware';
 import { notFoundHandler, errorHandler } from './middleware/error.middleware';
 
 // Load environment variables from .env file
@@ -27,10 +29,10 @@ initializeSocket(httpServer);
 
 // Middleware Setup
 
-// Security headers middleware - protects against common vulnerabilities
+// Security headers middleware
 app.use(helmet());
 
-// CORS configuration - allows requests from frontend application
+// CORS configuration
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -38,7 +40,10 @@ app.use(
   })
 );
 
-// JSON body parser middleware - parses incoming JSON requests
+// Rate limiting for all routes
+app.use(generalRateLimit);
+
+// JSON body parser middleware
 app.use(express.json());
 app.use(
   express.urlencoded({
@@ -63,19 +68,19 @@ app.use('/api/messages', messagesRoutes);
 // Notifications routes
 app.use('/api/notifications', notificationsRoutes);
 
-// Health check endpoint with DB connectivity test
+// AI routes
+app.use('/api/ai', aiRoutes);
+
+// Health check endpoint
 app.get('/api/health', async (req: Request, res: Response) => {
   let databaseStatus = 'disconnected';
   
   try {
-    // Test database connectivity with a simple query
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*', { count: 'exact', head: true });
     
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     
     databaseStatus = 'connected';
   } catch (error) {
@@ -83,7 +88,7 @@ app.get('/api/health', async (req: Request, res: Response) => {
     databaseStatus = 'disconnected';
   }
   
-  return res.status(200).json({
+  res.status(200).json({
     success: true,
     app: 'NeuroCare API',
     version: '1.0.0',
@@ -92,9 +97,9 @@ app.get('/api/health', async (req: Request, res: Response) => {
   });
 });
 
-// Root endpoint - API information
+// Root endpoint
 app.get('/', (req: Request, res: Response) => {
-  return res.status(200).json({
+  res.status(200).json({
     message: 'Welcome to NeuroCare API',
     endpoints: {
       health: '/api/health',
@@ -103,25 +108,27 @@ app.get('/', (req: Request, res: Response) => {
       reports: '/api/reports/*',
       messages: '/api/messages/*',
       notifications: '/api/notifications/*',
-      sessions: '/api/sessions/*',
       ai: '/api/ai/*',
+      sessions: '/api/sessions/*',
       games: '/api/games/*',
+    },
+    ai_endpoints: {
+      chatbot: 'POST /api/ai/chatbot (parent)',
+      analyses: 'GET /api/ai/analyses (doctor)',
+      game_adjust: 'POST /api/ai/game-adjust',
+    },
+    rate_limits: {
+      ai: '10 requests/minute',
+      general: '100 requests/minute',
     },
     socketio: {
       description: 'Real-time chat via Socket.IO',
-      events: {
-        join_room: 'Join child-specific room',
-        send_message: 'Send a new message',
-        new_message: 'Receive new message',
-        mark_read: 'Mark message as read',
-        message_read: 'Message read confirmation',
-        disconnect: 'User disconnected',
-      },
+      events: ['join_room', 'send_message', 'new_message', 'mark_read', 'message_read'],
     },
   });
 });
 
-// 404 Handler - catch all undefined routes
+// 404 Handler
 app.use(notFoundHandler);
 
 // Global Error Handler
@@ -132,6 +139,7 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 NeuroCare API running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔌 Socket.IO real-time chat ready`);
+  console.log(`🧠 Claude AI integration ready`);
   console.log(`Health Check: http://localhost:${PORT}/api/health`);
 });
 

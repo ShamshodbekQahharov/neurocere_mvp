@@ -311,19 +311,23 @@ export async function parentChatbot(
 ✅ Faza 0 — Toollar o'rnatildi
    Node.js, VSCode, GitHub, Supabase, Vercel tayyor
 
-✅ Faza 1 — Backend (hozir shu yerda)
+✅ Faza 1 — Backend (TO'LIQ TAYYOR!)
     Express server, Auth tizimi, DB jadvallar
     ✅ 1-kun: Toollar o'rnatildi
     ✅ 2-kun: Express server + papka tuzilmasi
     ✅ 3-kun: Supabase + 11 ta jadval
     ✅ 4-kun: Auth tizimi (register/login/logout/getMe)
     ✅ 5-kun: Children API + xato boshqarish
-    ✅ 6-kun: Reports API + Claude AI tahlili
-    ✅ 7-kun: Messages API + Socket.IO real-time chat
+    ✅ 6-kun: Reports API + Claude AI tahlil
+    ✅ 7-kun: Messages + Socket.IO real-time chat
+    ✅ 8-kun: AI Service to'liq (chatbot, hisobot, o'yin)
+    ✅ 9-kun: Sessions API + eslatma tizimi
 
-🔄 Faza 2 — Doktor + Ota-ona UI
-⏳ Faza 3 — Bola O'yinlari
-⏳ Faza 4 — Test + Deploy
+🔄 Faza 2 — Frontend (keyingi)
+  ⏳ React setup + Router
+  ⏳ Doktor dashboard
+  ⏳ Ota-ona panel
+  ⏳ Bola o'yinlari
 ```
 
 ### MVP da bo'lmaydi (keyinroq)
