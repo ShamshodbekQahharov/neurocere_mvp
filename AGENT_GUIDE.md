@@ -318,6 +318,8 @@ export async function parentChatbot(
     ✅ 3-kun: Supabase + 11 ta jadval
     ✅ 4-kun: Auth tizimi (register/login/logout/getMe)
     ✅ 5-kun: Children API + xato boshqarish
+    ✅ 6-kun: Reports API + Claude AI tahlili
+    ✅ 7-kun: Messages API + Socket.IO real-time chat
 
 🔄 Faza 2 — Doktor + Ota-ona UI
 ⏳ Faza 3 — Bola O'yinlari
