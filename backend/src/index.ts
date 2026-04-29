@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { supabaseAdmin } from './config/supabase';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -33,13 +34,31 @@ app.use(
 
 // API Routes
 
-// Health check endpoint - verifies server is running
-app.get('/api/health', (req: Request, res: Response) => {
+// Health check endpoint with DB connectivity test
+app.get('/api/health', async (req: Request, res: Response) => {
+  let databaseStatus = 'disconnected';
+  
+  try {
+    // Test database connectivity with a simple query
+    const { data, error, count } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      throw error;
+    }
+    
+    databaseStatus = 'connected';
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    databaseStatus = 'disconnected';
+  }
+  
   return res.status(200).json({
     success: true,
     app: 'NeuroCare API',
     version: '1.0.0',
-    status: 'running',
+    database: databaseStatus,
     timestamp: new Date().toISOString(),
   });
 });
