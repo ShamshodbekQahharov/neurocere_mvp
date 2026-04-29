@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { supabaseAdmin } from './config/supabase';
 import authRoutes from './routes/auth.routes';
 import childrenRoutes from './routes/children.routes';
+import reportsRoutes from './routes/reports.routes';
 import { notFoundHandler, errorHandler } from './middleware/error.middleware';
 
 // Load environment variables from .env file
@@ -42,6 +43,9 @@ app.use('/api/auth', authRoutes);
 
 // Children routes
 app.use('/api/children', childrenRoutes);
+
+// Reports routes
+app.use('/api/reports', reportsRoutes);
 
 // Health check endpoint with DB connectivity test
 app.get('/api/health', async (req: Request, res: Response) => {
