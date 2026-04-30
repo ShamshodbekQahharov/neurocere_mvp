@@ -1,0 +1,36 @@
+import React from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
+import { Button } from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+
+export const DoctorApp: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-gray-900">Doktor paneli</h1>
+            <Button variant="ghost" size="sm" onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              window.location.href = '/login';
+            }}>
+              Chiqish
+            </Button>
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <Card className="mb-6">
+          <h2 className="text-lg font-semibold mb-4">Xush kelibsiz, Doktor!</h2>
+          <p className="text-gray-600">Hali qayta ishlanayotgan sahifa. Endi bu yerda bolalaringizni boshqarishingiz mumkin.</p>
+          <div className="mt-4 flex gap-4">
+            <Button variant="primary">Bolalar ro'yxati</Button>
+            <Button variant="secondary">Hisobotlar</Button>
+            <Button variant="ghost">Sessiyalar</Button>
+          </div>
+        </Card>
+      </main>
+    </div>
+  );
+};

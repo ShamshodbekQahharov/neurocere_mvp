@@ -21,8 +21,10 @@ export const supabaseClient: SupabaseClient = createClient(
   {
     auth: {
       autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
+      persistSession: false,
+    },
+    db: {
+      schema: 'public'
     },
     global: {
       headers: {
@@ -40,6 +42,9 @@ export const supabaseAdmin: SupabaseClient = createClient(
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    db: {
+      schema: 'public'
     },
     global: {
       headers: {
