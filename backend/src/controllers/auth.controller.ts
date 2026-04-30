@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../types';
 
 // JWT Secret and Expiry
-const JWT_SECRET = process.env.JWT_SECRET as string;
+const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // Helper: Generate JWT Token
@@ -15,16 +15,16 @@ const generateToken = (user: {
   role: string;
 }): string => {
   return jwt.sign(
-    {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    JWT_SECRET,
-    {
-      expiresIn: JWT_EXPIRES_IN,
-    }
-  );
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET as any,
+      {
+        expiresIn: JWT_EXPIRES_IN as any,
+      }
+    );
 };
 
 // Helper: Validate Email

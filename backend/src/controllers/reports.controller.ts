@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { supabaseAdmin, supabaseClient } from '../config/supabase';
 import { User } from '../types';
-import { triggerAIAnalysis } from '../services/ai.service';
+import { analyzeAndSaveReport } from '../services/ai.service';
 
 /**
  * @desc    Create a new report
@@ -136,17 +136,22 @@ export const createReport = async (
     }
 
     // 2. Trigger AI analysis (async, don't wait)
-    triggerAIAnalysis(reportData.id, child_id, {
-      full_name: childData.full_name,
-      diagnosis: childData.diagnosis,
-      mood_score,
-      speech_notes,
-      behavior_notes,
-      sleep_hours,
-      appetite,
-      tasks_completed,
-      notes,
-    }).catch((err) => {
+    analyzeAndSaveReport(reportData.id, child_id, {
+      child: {
+        full_name: childData.full_name,
+        birth_date: (childData as any).birth_date || (childData as any).created_at || new Date().toISOString(),
+        diagnosis: childData.diagnosis,
+      },
+      report: {
+        mood_score,
+        speech_notes,
+        behavior_notes,
+        sleep_hours,
+        appetite,
+        tasks_completed,
+        notes,
+      },
+    }).catch((err: any) => {
       console.error('AI Analysis trigger failed:', err);
     });
 

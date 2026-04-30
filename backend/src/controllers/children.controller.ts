@@ -256,12 +256,13 @@ export const getChildById = async (
       .eq('child_id', id)
       .single();
 
-    if (!parentError && parentData) {
+    if (!parentError && parentData && parentData.users) {
+      const pData = parentData as any;
       parentInfo = {
-        user_id: parentData.user_id,
-        relation: parentData.relation,
-        full_name: parentData.users?.full_name,
-        email: parentData.users?.email,
+        user_id: pData.user_id,
+        relation: pData.relation,
+        full_name: pData.users[0].full_name,
+        email: pData.users[0].email,
       };
     }
 

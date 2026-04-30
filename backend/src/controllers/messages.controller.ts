@@ -152,10 +152,10 @@ export const sendMessage = async (
       return;
     }
 
-    // Check receiver exists
+    // Get receiver info for response
     const { data: receiverData, error: receiverError } = await supabaseAdmin
       .from('users')
-      .select('id, role')
+      .select('id, full_name, role')
       .eq('id', receiver_id)
       .single();
 
@@ -421,7 +421,7 @@ export const getUnreadCount = async (
       if (!acc[key]) {
         acc[key] = {
           child_id: key,
-          child_name: msg.child?.full_name || 'Unknown',
+          child_name: (msg.child as any)?.full_name || 'Unknown',
           unread_count: 0,
         };
       }

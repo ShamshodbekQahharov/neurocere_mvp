@@ -136,7 +136,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
         // Check receiver exists
         const { data: receiverData, error: receiverError } = await supabaseAdmin
           .from('users')
-          .select('id, role')
+          .select('id, role, full_name')
           .eq('id', receiverId)
           .single();
 

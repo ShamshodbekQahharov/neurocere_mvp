@@ -6,12 +6,8 @@ import {
 } from '../controllers/ai.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorizeRole } from '../middleware/auth.middleware';
-import { aiRateLimit } from '../middleware/rateLimit.middleware';
 
 const router = Router();
-
-// Rate limit for AI routes
-router.use(aiRateLimit);
 
 // Chatbot - parent only
 router.post(
