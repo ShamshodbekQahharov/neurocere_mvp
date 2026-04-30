@@ -1,74 +1,83 @@
-import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './hooks/useAuth';
-import { LoadingSpinner } from './components/ui/LoadingSpinner';
-import LoginPage from './pages/LoginPage';
-import NotFoundPage from './pages/NotFoundPage';
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useAuthStore } from './store/authStore'
+import LoginPage from './pages/LoginPage'
+import DoctorApp from './apps/doctor/DoctorApp'
+import { ParentApp } from './apps/parent/ParentApp'
+import { ChildApp } from './apps/child/ChildApp'
+import NotFoundPage from './pages/NotFoundPage'
+import { LoadingSpinner } from './components/ui/LoadingSpinner'
 
-// Lazy load apps
-const DoctorApp = lazy(() => import('./apps/doctor/DoctorApp'));
-const ParentApp = lazy(() => import('./apps/parent/ParentApp'));
-const ChildApp = lazy(() => import('./apps/child/ChildApp'));
+function ProtectedRoute({ 
+  children, 
+  allowedRole 
+}: { 
+  children: JSX.Element
+  allowedRole: string 
+}) {
+  const { isAuthenticated, user } = useAuthStore()
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  if (user?.role !== allowedRole) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return children
+}
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string[] }> = ({
-  children,
-  allowedRoles,
-}) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+function App() {
+  const { checkAuth, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
       </div>
-    );
+    )
   }
 
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-};
-
-const App: React.FC = () => {
   return (
-    <Suspense fallback={<LoadingSpinner size="lg" />}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/doctor/*"
-          element={
-            <ProtectedRoute allowedRoles={['doctor']}>
-              <DoctorApp />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/parent/*"
-          element={
-            <ProtectedRoute allowedRoles={['parent']}>
-              <ParentApp />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/child/*"
-          element={
-            <ProtectedRoute allowedRoles={['child']}>
-              <ChildApp />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
-  );
-};
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      
+      <Route
+        path="/doctor/*"
+        element={
+          <ProtectedRoute allowedRole="doctor">
+            <DoctorApp />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/parent/*"
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <ParentApp />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/child/*"
+        element={
+          <ProtectedRoute allowedRole="child">
+            <ChildApp />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  )
+}
 
-export default App;
+export default App
