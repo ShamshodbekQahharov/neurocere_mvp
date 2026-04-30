@@ -265,6 +265,94 @@ export const getReportsByChild = async (
 };
 
 /**
+ * @desc    Get all reports (for doctor dashboard)
+ * @route   GET /api/reports
+ * @access  Private (Doctor only)
+ */
+export const getAllReports = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = (req as any).user as User;
+
+    // Parse query params
+    const limit = Math.min(parseInt(req.query.limit as string) || 5, 100);
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    // Get all children of this doctor
+    const { data: childrenData, error: childrenError } = await supabaseAdmin
+      .from('children')
+      .select('id')
+      .eq('doctor_id', user.id)
+      .eq('is_active', true);
+
+    if (childrenError) {
+      throw childrenError;
+    }
+
+    const childIds = (childrenData || []).map((c) => c.id);
+
+    if (childIds.length === 0) {
+      res.status(200).json({
+        success: true,
+        data: {
+          reports: [],
+          total: 0,
+          limit,
+          offset,
+        },
+      });
+      return;
+    }
+
+    // Get reports for all children
+    const { data, error, count } = await supabaseAdmin
+      .from('reports')
+      .select('*', { count: 'exact' })
+      .in('child_id', childIds)
+      .eq('is_active', true)
+      .order('report_date', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    // Get child details for each report
+    const reportsWithChild = await Promise.all(
+      (data || []).map(async (report) => {
+        const { data: childData } = await supabaseAdmin
+          .from('children')
+          .select('full_name')
+          .eq('id', report.child_id)
+          .single();
+        return {
+          ...report,
+          childName: childData?.full_name || 'Unknown',
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        reports: reportsWithChild || [],
+        total: count || 0,
+        limit,
+        offset,
+      },
+    });
+  } catch (error) {
+    console.error('Get all reports error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Hisobotlarni olishda xatolik yuz berdi',
+    });
+  }
+};
+
+/**
  * @desc    Get report by ID
  * @route   GET /api/reports/:id
  * @access  Private (Doctor or Parent with access)

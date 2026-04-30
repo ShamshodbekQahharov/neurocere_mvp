@@ -35,4 +35,26 @@ api.interceptors.response.use(
   }
 );
 
+// Doctor Dashboard API functions
+const doctorApi = {
+  // Dashboard stats
+  getChildrenCount: () => api.get('/api/children'),
+
+  getTodaySessions: (from: string, to: string) =>
+    api.get(`/api/sessions?from=${from}&to=${to}`),
+
+  getRecentReports: (limit = 5) =>
+    api.get(`/api/reports?limit=${limit}`),
+
+  getUnreadMessages: () =>
+    api.get('/api/messages/unread-count'),
+
+  getUpcomingSessions: () =>
+    api.get('/api/sessions/upcoming'),
+
+  getNotifications: () =>
+    api.get('/api/notifications'),
+};
+
 export default api;
+export { doctorApi };

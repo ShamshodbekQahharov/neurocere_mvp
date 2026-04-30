@@ -4,6 +4,7 @@ import {
   getReportsByChild,
   getReportById,
   getReportStats,
+  getAllReports,
 } from '../controllers/reports.controller';
 import { authenticate } from '../middleware/auth.middleware';
 import { authorizeRole } from '../middleware/auth.middleware';
@@ -18,6 +19,13 @@ router.post(
   authenticate,
   authorizeRole('parent'),
   createReport
+);
+
+router.get(
+  '/',
+  authenticate,
+  authorizeRole('doctor'),
+  getAllReports
 );
 
 router.get(
