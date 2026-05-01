@@ -11,16 +11,40 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: true,
 
-      login: async (email: string, password: string) => {
-        try {
-          const response = await api.post('/api/auth/login', { email, password });
-          const { token, user } = response.data.data;
-          localStorage.setItem('token', token);
-          set({ user, token, isAuthenticated: true, isLoading: false });
-        } catch (error: any) {
-          throw new Error(error.response?.data?.error || 'Kirishda xatolik');
-        }
-      },
+       login: async (email: string, password: string) => {
+         try {
+           set({ isLoading: true })
+           
+           const response = await api.post('/api/auth/login', { email, password });
+           console.log('API response:', response.data)
+           
+           if (response.data.success) {
+             const { token, user } = response.data.data;
+           
+             localStorage.setItem('token', token);
+             localStorage.setItem('user', JSON.stringify(user));
+             
+             set({ user, token, isAuthenticated: true, isLoading: false });
+             
+             return { success: true, user };
+           }
+           
+           set({ isLoading: false })
+           return { 
+             success: false, 
+             message: response.data.message || 'Xatolik' 
+           }
+           
+         } catch (error: any) {
+           console.error('Login error:', error.response?.data)
+           set({ isLoading: false })
+           return {
+             success: false,
+             message: error.response?.data?.message 
+                      || 'Server bilan ulanishda xatolik'
+           }
+         }
+       },
 
       logout: () => {
         localStorage.removeItem('token');
