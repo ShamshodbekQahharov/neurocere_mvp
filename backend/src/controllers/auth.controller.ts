@@ -183,6 +183,8 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
+    console.log('Login request:', { email })
+
     // Validation
     if (!email || !password) {
       res.status(400).json({
@@ -200,7 +202,13 @@ export const login = async (
       }
     );
 
+    console.log('Supabase auth result:', {
+      userId: authData?.user?.id,
+      error: signInError?.message
+    })
+
     if (signInError || !authData.user) {
+      console.log('Auth error:', signInError)
       res.status(401).json({
         success: false,
         error: 'Email yoki parol noto\'g\'ri',
@@ -214,6 +222,11 @@ export const login = async (
       .select('*')
       .eq('id', authData.user.id)
       .single();
+
+    console.log('User from DB:', {
+      user: userDataResult,
+      error: userError?.message
+    })
 
     let userData = userDataResult
 
