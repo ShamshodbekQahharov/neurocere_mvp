@@ -11,6 +11,7 @@ import reportsRoutes from './routes/reports.routes'
 import messagesRoutes from './routes/messages.routes'
 import notificationsRoutes from './routes/notifications.routes'
 import aiRoutes from './routes/ai.routes'
+import sessionsRoutes from './routes/sessions.routes'
 import { notFoundHandler, errorHandler } from './middleware/error.middleware'
 
 // Load environment variables from .env file
@@ -95,7 +96,6 @@ app.use('/api/notifications', notificationsRoutes)
 app.use('/api/ai', aiRoutes)
 
 // Sessions routes
-import sessionsRoutes from './routes/sessions.routes'
 app.use('/api/sessions', sessionsRoutes)
 
 // Games routes
