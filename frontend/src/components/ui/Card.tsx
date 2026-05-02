@@ -7,12 +7,12 @@ interface CardProps {
   className?: string;
 }
 
-export const Card: React.FC<CardProps> = ({
+export default function Card({
   children,
   title,
   subtitle,
   className = '',
-}) => {
+}: CardProps) {
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 ${className}`}>
       {(title || subtitle) && (
@@ -23,5 +23,5 @@ export const Card: React.FC<CardProps> = ({
       )}
       <div className="p-6">{children}</div>
     </div>
-  );
-};
+  )
+}

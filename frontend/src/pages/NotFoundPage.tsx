@@ -1,1 +1,20 @@
-[{'content': 'import React from \'react\'\nimport { Link } from \'react-router-dom\'\nimport Button from \'../components/ui/Button\'\n\nexport default function NotFoundPage() {\n  return (\n    <div className="min-h-screen flex items-center justify-center p-4">\n      <div className="text-center">\n        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>\n        <h2 className="text-2xl font-semibold text-gray-700 mb-2">Sahifa topilmadi</h2>\n        <p className="text-gray-500 mb-6">Qidirayotgan sahifa mavjud emas</p>\n        <Link to="/login">\n          <Button variant="primary" size="md">\n            Bosh sahifaga qaytish\n          </Button>\n        </Link>\n      </div>\n    </div>\n  )\n}'}]
+import React from 'react'
+import { Link } from 'react-router-dom'
+import Button from '../components/ui/Button'
+
+export default function NotFoundPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-6xl font-bold text-gray-900 mb-4">404</h1>
+        <h2 className="text-2xl font-semibold text-gray-700 mb-2">Sahifa topilmadi</h2>
+        <p className="text-gray-500 mb-6">Qidirayotgan sahifa mavjud emas</p>
+        <Link to="/login">
+          <Button variant="primary" size="md">
+            Bosh sahifaga qaytish
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}

@@ -1,1 +1,80 @@
-[{'react-router-dom': 'mport { useEffect'}, {"./store/authStore'\nimport LoginPage from './pages/LoginPage'\nimport DoctorApp from './apps/doctor/DoctorApp'\nimport ParentApp from './apps/parent/ParentApp'\nimport ChildApp from './apps/child/ChildApp'\nimport NotFoundPage from './pages/NotFoundPage'\nimport LoadingSpinner from './components/ui/LoadingSpinner": 'nterface ProtectedRouteProps {\n  children: JSX.Element\n  allowedRole: string'}, {'to="/login': 'eplace />'}, {'to="/login': 'eplace />'}, {'size="lg': 'div>\n    )'}, {'allowedRole="doctor': 'DoctorApp />\n          </ProtectedRoute>'}, {'allowedRole="parent': 'ParentApp />\n          </ProtectedRoute>'}, {'allowedRole="child': 'ChildApp />\n          </ProtectedRoute>'}, {'to="/login': 'eplace />'}, {}]
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useAuthStore } from './store/authStore'
+import LoginPage from './pages/LoginPage'
+import DoctorApp from './apps/doctor/DoctorApp'
+import ParentApp from './apps/parent/ParentApp'
+import ChildApp from './apps/child/ChildApp'
+import NotFoundPage from './pages/NotFoundPage'
+
+function App() {
+  const { 
+    checkAuth, 
+    isLoading, 
+    isAuthenticated, 
+    user 
+  } = useAuthStore()
+
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center 
+                      justify-center bg-gray-50">
+        <div className="animate-spin rounded-full 
+                        h-12 w-12 border-b-2 
+                        border-blue-900" />
+      </div>
+    )
+  }
+
+  return (
+    <Routes>
+      <Route 
+        path="/login" 
+        element={<LoginPage />} 
+      />
+
+      <Route
+        path="/doctor/*"
+        element={
+          isAuthenticated && user?.role === 'doctor'
+            ? <DoctorApp />
+            : <Navigate to="/login" replace />
+        }
+      />
+
+      <Route
+        path="/parent/*"
+        element={
+          isAuthenticated && user?.role === 'parent'
+            ? <ParentApp />
+            : <Navigate to="/login" replace />
+        }
+      />
+
+      <Route
+        path="/child/*"
+        element={
+          isAuthenticated && user?.role === 'child'
+            ? <ChildApp />
+            : <Navigate to="/login" replace />
+        }
+      />
+
+      <Route 
+        path="/" 
+        element={<Navigate to="/login" replace />} 
+      />
+      
+      <Route 
+        path="*" 
+        element={<NotFoundPage />} 
+      />
+    </Routes>
+  )
+}
+
+export default App

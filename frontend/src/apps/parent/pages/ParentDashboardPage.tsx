@@ -1,1 +1,172 @@
-[{'react-router-dom': 'mport { useAuthStore'}, {"../../services/api'\nimport toast from 'react-hot-toast": 'xport default function ParentDashboardPage() {\n  const { user'}, ['stats, setStats] = useState({\n    latestMood: 0,\n    weeklyReports: 0,\n    nextSession: null as any,\n    avgMood: 0\n  })\n  const [recentReports, setRecentReports] = useState<any[]>([])\n  const [loading, setLoading] = useState(true)\n\n  useEffect(() => {\n    fetchDashboardData()\n  }, [])\n\n  const fetchDashboardData = async () => {\n    try {\n      // Get children to find childId\n      const childrenRes = await doctorApi.getChildrenCount()\n      const children = childrenRes.data?.data?.children || []\n      if (children.length === 0) return\n      \n      const childId = children[0].id\n      \n      // Get recent reports (last 5)\n      const reportsRes = await doctorApi.getRecentReports(20)\n      setRecentReports(reportsRes.data?.data?.reports || [])\n      \n      // Count reports from last 7 days\n      const weekAgo = new Date()\n      weekAgo.setDate(weekAgo.getDate() - 7)\n      const weekly = (reportsRes.data?.data?.reports || []).filter((r: any) => {\n        return new Date(r.report_date) >= weekAgo\n      }).length\n      \n      // Get upcoming sessions\n      const sessionsRes = await doctorApi.getUpcomingSessions()\n      const upcoming = (sessionsRes.data?.data?.sessions || []).find((s: any) => s.child_id === childId)\n      \n      // Get progress\n      try {\n        const progressRes = await doctorApi.getChildrenCount()._requester!.get(`/api/children/${childId}/progress`)\n        setStats(prev => ({\n          ...prev,\n          avgMood: progressRes.data?.data?.stats?.avg_mood || 0\n        }))\n      } catch (e) {\n        console.log(\'Progress endpoint not available\')\n      }\n      \n      setStats(prev => ({\n        latestMood: reportsRes.data?.data?.reports?.[0]?.mood_score || 0,\n        weeklyReports: weekly,\n        nextSession: upcoming || null,\n        avgMood: stats.avgMood\n      }))\n    } catch (error) {\n      console.error(\'Dashboard fetch error:\', error)\n      toast.error(\'Ma\'lumotlarni yuklashda xatolik\')\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  const getMoodEmoji = (score: number) => {\n    if (score >= 7) return \'🟢\'\n    if (score >= 4) return \'🟡\'\n    return \'🔴\'\n  }\n\n  const formatDate = (dateStr: string) => {\n    try {\n      const date = new Date(dateStr)\n      return date.toLocaleDateString(\'uz-UZ\', { day: \'numeric\', month: \'short\' })\n    } catch {\n      return dateStr\n    }\n  }\n\n  const childName = user?.firstName || \'Bola\'\n\n  return (\n    <div className="space-y-6">\n      {/* Header */}\n      <div>\n        <h1 className="text-2xl font-bold text-gray-800">Bosh sahifa</h1>\n        <p className="text-gray-500', 'Xush kelibsiz, {user?.firstName}!</p>\n      </div>\n\n      {/* Stats Grid */}\n      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">\n        {/* Latest Mood */}\n        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">\n          <h3 className="text-sm font-medium text-gray-500 mb-2">Bugungi holat</h3>\n          <div className="flex items-center gap-3">\n            <span className="text-3xl">{getMoodEmoji(stats.latestMood)}</span>\n            <div>\n              <p className="text-2xl font-bold text-gray-800">{stats.latestMood}/10</p>\n              <p className="text-xs text-gray-500">Kayfiyat</p>\n            </div>\n          </div>\n        </div>\n\n        {/* Weekly Reports */}\n        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">\n          <h3 className="text-sm font-medium text-gray-500 mb-2">Bu hafta hisobotlar</h3>\n          <div className="flex items-center gap-3">\n            <span className="text-3xl">📝</span>\n            <div>\n              <p className="text-2xl font-bold text-gray-800">{stats.weeklyReports}</p>\n              <p className="text-xs text-gray-500">7 kundan yuborilgan</p>\n            </div>\n          </div>\n        </div>\n\n        {/* Next Session */}\n        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">\n          <h3 className="text-sm font-medium text-gray-500 mb-2">Keyingi sessiya</h3>\n          {stats.nextSession ? (\n            <div>\n              <p className="text-lg font-semibold text-gray-800">\n                {new Date(stats.nextSession.dateTime).toLocaleDateString(\'uz-UZ\')}\n              </p>\n              <p className="text-sm text-gray-600', {'hour': '2-digit', 'minute': '2-digit'}], {'text-sm': "Sessiya yo'q</p>\n          )"}, {'text-gray-800': {'text-gray-500': "O'rtacha kayfiyat</p>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      {/* Quick Actions & Recent Reports */"}, 'className=': 'ext-blue-600 hover:text-blue-700 text-sm font-medium', 'className="space-y-4': {'rounded': 'div>\n                  </div>\n                ))'}, 'className="text-gray-500': "Hali hisobotlar yo'q</p>\n              </div>\n            ) : (\n              <div className=", 'space-y-4': {'className=': 'lex items-center gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors', 'text-gray-500': {'gap-2': 'span>{getMoodEmoji(report.mood_score)'}, 'className="font-medium': {'truncate': {}, 'className=': 'lex items-center gap-3 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors', 'text-gray-500': 'Grafik va statistik</p>\n                </div>\n              </Link>\n            </div>\n          </div>\n\n          {/* Motivational Message */'}, 'text-green-600': 'Bolangiz siz bilan baxtli 💚</span>\n            </p>\n          </div>\n        </div>\n      </div>\n    </div>\n  )'}}]
+import { useState, useEffect } from 'react'
+import { useAuthStore } from '../../../store/authStore'
+import api from '../../../services/api'
+import Card from '../../../components/ui/Card'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner'
+
+export default function ParentDashboardPage() {
+  const { user } = useAuthStore()
+  const [stats, setStats] = useState({
+    latestMood: 0,
+    weeklyReports: 0,
+    nextSession: null as any,
+    avgMood: 0
+  })
+  const [recentReports, setRecentReports] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    try {
+      // Get children to find childId
+      const childrenRes = await api.get('/api/children')
+      const children = childrenRes.data?.data?.children || []
+      if (children.length === 0) return
+
+      const childId = children[0].id
+
+      // Get recent reports (last 5)
+      const reportsRes = await api.get('/api/reports', { params: { limit: 20 } })
+      setRecentReports(reportsRes.data?.data?.reports || [])
+
+      // Count reports from last 7 days
+      const weekAgo = new Date()
+      weekAgo.setDate(weekAgo.getDate() - 7)
+      const weekly = (reportsRes.data?.data?.reports || []).filter((r: any) => {
+        return new Date(r.report_date) >= weekAgo
+      }).length
+
+      // Get upcoming sessions
+      const sessionsRes = await api.get('/api/sessions/upcoming')
+      const upcoming = (sessionsRes.data?.data?.sessions || []).find((s: any) => s.child_id === childId)
+
+      // Get progress
+      try {
+        const progressRes = await api.get(`/api/children/${childId}/progress`)
+        setStats(prev => ({
+          ...prev,
+          avgMood: progressRes.data?.data?.stats?.avg_mood || 0
+        }))
+      } catch (e) {
+        console.log('Progress endpoint not available')
+      }
+
+      setStats(prev => ({
+        latestMood: reportsRes.data?.data?.reports?.[0]?.mood_score || 0,
+        weeklyReports: weekly,
+        nextSession: upcoming || null,
+        avgMood: stats.avgMood
+      }))
+    } catch (error) {
+      console.error('Dashboard data fetch error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Salom, {user?.name}</h1>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card title="Oxirgi Kayfiyat" subtitle="Bemorning so'nggi kayfiyati">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">
+              {stats.latestMood > 0 ? '🙂' : '😐'}
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.latestMood > 0 ? stats.latestMood + '/5' : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Haftalik Hisobotlar" subtitle="So'nggi 7 kun">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">📋</div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{stats.weeklyReports}</p>
+              <p className="text-sm text-gray-500">ta hisobot</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Keyingi Sessiya" subtitle="Navbatdagi uchrashuv">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">📅</div>
+            <div>
+              {stats.nextSession ? (
+                <>
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(stats.nextSession.session_date).toLocaleDateString('uz-UZ')}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {stats.nextSession.status === 'scheduled' ? 'Navbatda' : stats.nextSession.status}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Sessiya yo'q</p>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        <Card title="O'rtacha Kayfiyat" subtitle="Umumiy progress">
+          <div className="flex items-center gap-4">
+            <div className="text-4xl">📈</div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.avgMood > 0 ? stats.avgMood.toFixed(1) + '/5' : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent Reports */}
+      <Card title="So'nggi Hisobotlar" subtitle="Bemorning so'nggi hisobotlari">
+        {recentReports.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">Hisobotlar mavjud emas</p>
+        ) : (
+          <div className="space-y-4">
+            {recentReports.slice(0, 5).map((report: any) => (
+              <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="text-2xl">
+                    {report.mood_score >= 4 ? '😊' : report.mood_score >= 3 ? '🙂' : report.mood_score >= 2 ? '😐' : '😢'}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      Kayfiyat: {report.mood_score}/5
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(report.report_date).toLocaleDateString('uz-UZ')}
+                    </p>
+                  </div>
+                </div>
+                {report.notes && (
+                  <p className="text-sm text-gray-600 max-w-xs truncate">
+                    {report.notes}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
