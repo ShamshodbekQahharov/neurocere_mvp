@@ -209,18 +209,40 @@ export const login = async (
     }
 
     // 2. Get user from custom users table
-    const { data: userData, error: userError } = await supabaseAdmin
+    const { data: userDataResult, error: userError } = await supabaseAdmin
       .from('users')
       .select('*')
       .eq('id', authData.user.id)
       .single();
 
-    if (userError || !userData) {
-      res.status(404).json({
-        success: false,
-        error: 'Foydalanuvchi ma\'lumotlari topilmadi',
-      });
-      return;
+    let userData = userDataResult
+
+    if (!userData) {
+      const { error: insertError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          email: authData.user.email || '',
+          full_name: authData.user.email?.split('@')[0] || 'User',
+          role: 'parent'
+        })
+
+      if (insertError) {
+        console.error('Auto-create user error:', insertError)
+        res.status(401).json({
+          success: false,
+          error: 'Foydalanuvchi topilmadi',
+        })
+        return
+      }
+
+      const { data: newUser } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+
+      userData = newUser
     }
 
     // 3. Generate JWT Token
