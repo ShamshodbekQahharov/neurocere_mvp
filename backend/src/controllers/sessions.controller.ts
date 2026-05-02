@@ -190,18 +190,12 @@ export const getSessions = async (
       .select(
         `
         *,
-        child:children(
-          id,
-          full_name
-        ),
-        doctor:users!sessions_doctor_id_fkey(
-          id,
-          full_name
-        )
+        child:children(id, full_name),
+        doctor:users(id, full_name)
       `,
         { count: 'exact' }
       )
-      .eq('is_active', true)
+      .eq('doctor_id', user.id)
       .order('scheduled_at', { ascending: false });
 
     // Filter by child if provided
@@ -222,38 +216,10 @@ export const getSessions = async (
       query = query.lte('scheduled_at', to as string);
     }
 
-    // Apply user-specific filters
-    if (user.role === 'doctor') {
-      query = query.eq('doctor_id', user.id);
-    } else if (user.role === 'parent') {
-      // Get children of this parent
-      const { data: parentChildren, error: parentError } = await supabaseAdmin
-        .from('parents')
-        .select('child_id')
-        .eq('user_id', user.id);
-
-      if (parentError) {
-        throw parentError;
-      }
-
-      const childIds = (parentChildren || []).map((pc) => pc.child_id);
-      if (childIds.length === 0) {
-        res.status(200).json({
-          success: true,
-          data: {
-            sessions: [],
-            total: 0,
-          },
-        });
-        return;
-      }
-
-      query = query.in('child_id', childIds);
-    }
-
     const { data: sessions, error, count } = await query.limit(Number(limit));
 
     if (error) {
+      console.error('Sessions error:', error);
       throw error;
     }
 
@@ -548,73 +514,37 @@ export const getUpcomingSessions = async (
   try {
     const user = (req as any).user as User;
 
-    const now = new Date();
-    const sevenDaysLater = new Date();
-    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+    const now = new Date().toISOString();
+    const nextWeek = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
-    let query = supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from('sessions')
-      .select(
-        `
+      .select(`
         *,
-        child:children(
-          id,
-          full_name
-        ),
-        doctor:users!sessions_doctor_id_fkey(
-          id,
-          full_name
-        )
-      `
-      )
-      .eq('is_active', true)
+        child:children(id, full_name),
+        doctor:users(id, full_name)
+      `)
+      .eq('doctor_id', user.id)
       .eq('status', 'scheduled')
-      .gte('scheduled_at', now.toISOString())
-      .lte('scheduled_at', sevenDaysLater.toISOString())
+      .gte('scheduled_at', now)
+      .lte('scheduled_at', nextWeek)
       .order('scheduled_at', { ascending: true });
 
-    // Apply user-specific filters
-    if (user.role === 'doctor') {
-      query = query.eq('doctor_id', user.id);
-    } else if (user.role === 'parent') {
-      const { data: parentChildren, error: parentError } = await supabaseAdmin
-        .from('parents')
-        .select('child_id')
-        .eq('user_id', user.id);
-
-      if (parentError) {
-        throw parentError;
-      }
-
-      const childIds = (parentChildren || []).map((pc) => pc.child_id);
-      if (childIds.length === 0) {
-        res.status(200).json({
-          success: true,
-          data: {
-            sessions: [],
-            count: 0,
-            next_session: null,
-          },
-        });
-        return;
-      }
-
-      query = query.in('child_id', childIds);
-    }
-
-    const { data: sessions, error } = await query;
-
     if (error) {
+      console.error('Sessions error:', error);
       throw error;
     }
 
-    const nextSession = (sessions && sessions.length > 0) ? sessions[0] : null;
+    const sessions = data || [];
+    const nextSession = sessions.length > 0 ? sessions[0] : null;
 
     res.status(200).json({
       success: true,
       data: {
-        sessions: sessions || [],
-        count: sessions ? sessions.length : 0,
+        sessions,
+        count: sessions.length,
         next_session: nextSession,
       },
     });

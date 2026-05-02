@@ -1,44 +1,30 @@
 import { useEffect, useState } from 'react'
 import StatCard from '../../../components/ui/StatCard'
 import Badge from '../../../components/ui/Badge'
-import ProgressBar from '../../../components/ui/ProgressBar'
 import SkeletonLoader from '../../../components/ui/SkeletonLoader'
 import { doctorApi } from '../../../services/api'
-import { formatDistanceToNow } from 'date-fns'
-
-type Session = {
-  id: string
-  childName: string
-  type: string
-  dateTime: string
-  duration: number
-  status: 'scheduled' | 'completed'
-}
 
 type Report = {
   id: string
   childName: string
-  date: string
+  report_date: string
   condition: number
-  tasksCompleted: number
-  aiAnalysis: string
+  tasks_completed: number
+  ai_summary: string
 }
 
 export default function DashboardPage() {
   // Stats
-  const [childrenCount, setChildrenCount] = useState(0)
-  const [todaySessions, setTodaySessions] = useState(0)
-  const [recentReports, setRecentReports] = useState(0)
-  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [childrenCount, setChildrenCount] = useState<number>(0)
+  const [recentReports, setRecentReports] = useState<number>(0)
+  const [unreadCount, setUnreadCount] = useState<number>(0)
 
   // Data
-  const [reports, setReports] = useState<Report[]>([])
-  const [sessions, setSessions] = useState<Session[]>([])
+  const [reports, setReports] = useState<any[]>([])
+  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([])
 
   // Loading
-  const [statsLoading, setStatsLoading] = useState(true)
-  const [reportsLoading, setReportsLoading] = useState(true)
-  const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   // Error
   const [error, setError] = useState<string | null>(null)
@@ -49,78 +35,58 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     setError(null)
+    setLoading(true)
     try {
-      await Promise.all([
-        fetchChildrenCount(),
-        fetchTodaySessions(),
-        fetchRecentReports(),
-        fetchUnreadMessages(),
-        fetchUpcomingSessions(),
+      // Fetch children, reports, unread messages concurrently
+      const [
+        childrenRes,
+        reportsRes,
+        unreadRes,
+      ] = await Promise.allSettled([
+        doctorApi.getChildrenCount(),
+        doctorApi.getRecentReports(5),
+        doctorApi.getUnreadMessages(),
       ])
-    } catch (err) {
+
+      // Children count
+      if (childrenRes.status === 'fulfilled') {
+        const d = childrenRes.value.data.data
+        setChildrenCount(d?.total || d?.children?.length || 0)
+      } else {
+        console.error('Children fetch error:', childrenRes.reason)
+      }
+
+      // Reports
+      if (reportsRes.status === 'fulfilled') {
+        const d = reportsRes.value.data.data
+        setRecentReports(d?.reports?.length || 0)
+        setReports(Array.isArray(d?.reports) ? d.reports.slice(0, 5) : [])
+      } else {
+        console.error('Reports fetch error:', reportsRes.reason)
+      }
+
+      // Unread messages
+      if (unreadRes.status === 'fulfilled') {
+        const d = unreadRes.value.data.data
+        setUnreadCount(d?.total_unread || 0)
+      } else {
+        console.error('Unread messages fetch error:', unreadRes.reason)
+      }
+
+      // Fetch upcoming sessions separately (don't fail dashboard if this fails)
+      try {
+        const sessionsRes = await doctorApi.getUpcomingSessions()
+        const d = sessionsRes.data.data
+        setUpcomingSessions(d?.sessions || d || [])
+      } catch (e) {
+        console.error('Upcoming sessions fetch error:', e)
+        setUpcomingSessions([])
+      }
+    } catch (error) {
+      console.error('Dashboard fetch error:', error)
       setError('Ma\'lumot yuklanmadi. Qayta urinish tilimaydi.')
-    }
-  }
-
-  const fetchChildrenCount = async () => {
-    setStatsLoading(true)
-    try {
-      const res = await doctorApi.getChildrenCount()
-      setChildrenCount(res.data?.data?.total || res.data?.data?.children?.length || 0)
-    } catch (err) {
-      console.error(err)
     } finally {
-      setStatsLoading(false)
-    }
-  }
-
-  const fetchTodaySessions = async () => {
-    setStatsLoading(true)
-    try {
-      const today = new Date().toISOString().split('T')[0]
-      const res = await doctorApi.getTodaySessions(today, today)
-      setTodaySessions(res.data?.data?.sessions?.length || res.data?.data?.total || 0)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setStatsLoading(false)
-    }
-  }
-
-  const fetchRecentReports = async () => {
-    setReportsLoading(true)
-    try {
-      const res = await doctorApi.getRecentReports(5)
-      setRecentReports(res.data?.data?.reports?.length || 0)
-      setReports(Array.isArray(res.data?.data?.reports) ? res.data.data.reports.slice(0, 5) : [])
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setReportsLoading(false)
-    }
-  }
-
-  const fetchUnreadMessages = async () => {
-    setStatsLoading(true)
-    try {
-      const res = await doctorApi.getUnreadMessages()
-      setUnreadMessages(res.data?.data?.count || res.data?.data || 0)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setStatsLoading(false)
-    }
-  }
-
-  const fetchUpcomingSessions = async () => {
-    setSessionsLoading(true)
-    try {
-      const res = await doctorApi.getUpcomingSessions()
-      setSessions(Array.isArray(res.data?.data?.sessions) ? res.data.data.sessions.slice(0, 5) : [])
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setSessionsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -132,9 +98,19 @@ export default function DashboardPage() {
 
   const formatRelativeDate = (dateStr: string) => {
     try {
-      return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+      const date = new Date(dateStr);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      
+      if (diffMins < 1) return 'hozir';
+      if (diffMins < 60) return `${diffMins} daqiqa oldin`;
+      if (diffHours < 24) return `${diffHours} soat oldin`;
+      return date.toLocaleDateString('uz-UZ');
     } catch {
-      return dateStr
+      return dateStr;
     }
   }
 
@@ -147,28 +123,21 @@ export default function DashboardPage() {
           value={childrenCount}
           icon="👶"
           color="blue"
-          loading={statsLoading}
-        />
-        <StatCard
-          title="Bugungi sessiyalar"
-          value={todaySessions}
-          icon="📅"
-          color="green"
-          loading={statsLoading}
+          loading={loading}
         />
         <StatCard
           title="Yangi hisobotlar"
           value={recentReports}
           icon="📋"
           color="yellow"
-          loading={statsLoading}
+          loading={loading}
         />
         <StatCard
           title="O'qilmagan xabarlar"
-          value={unreadMessages}
+          value={unreadCount}
           icon="💬"
           color="red"
-          loading={statsLoading}
+          loading={loading}
         />
       </div>
 
@@ -200,7 +169,7 @@ export default function DashboardPage() {
               </a>
             </div>
 
-            {reportsLoading ? (
+            {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center gap-4">
@@ -225,22 +194,26 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {reports.map((r) => {
-                      const badge = getConditionBadge(r.condition)
+                    {reports.map((r: any) => {
+                      const badge = r.condition <= 3 ? { variant: 'danger' as const, label: `${r.condition}/10 - Katta bezovta` }
+                        : r.condition <= 6 ? { variant: 'warning' as const, label: `${r.condition}/10 - O'rta` }
+                        : { variant: 'success' as const, label: `${r.condition}/10 - Yaxshi` };
                       return (
                         <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
                           <td className="py-3 px-2">
                             <span className="font-medium text-gray-800">{r.childName}</span>
                           </td>
                           <td className="py-3 px-2 text-gray-500">
-                            {formatRelativeDate(r.date)}
+                            {new Date(r.report_date).toLocaleDateString('uz-UZ')}
                           </td>
                           <td className="py-3 px-2">
                             <Badge label={badge.label} variant={badge.variant} />
                           </td>
                           <td className="py-3 px-2">
                             <div className="w-24">
-                              <ProgressBar value={r.tasksCompleted} color="bg-blue-600" />
+                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-600 rounded-full" style={{width: `${r.tasks_completed}%`}} />
+                              </div>
                             </div>
                           </td>
                           <td className="py-3 px-2">
@@ -265,7 +238,7 @@ export default function DashboardPage() {
               Kelayotgan sessiyalar
             </h2>
 
-            {sessionsLoading ? (
+            {loading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="space-y-2">
@@ -274,29 +247,37 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-            ) : sessions.length === 0 ? (
+            ) : upcomingSessions.length === 0 ? (
               <div className="text-center py-8 text-gray-400">
                 <div className="text-3xl mb-2">📅</div>
                 <p>Kelayotgan sessiyalar yo'q</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {sessions.map((s) => (
+                {upcomingSessions.map((s: any) => (
                   <div
                     key={s.id}
                     className="p-4 border border-gray-100 rounded-lg hover:border-blue-200 transition-colors"
                   >
-                    <div className="font-medium text-gray-800 mb-1">{s.childName}</div>
+                    <div className="font-medium text-gray-800 mb-1">
+                      {s.child?.full_name || s.childName || 'Unknown'}
+                    </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
-                      <span>{s.type}</span>
+                      <span>Terapiya</span>
                       <span>•</span>
-                      <span>{formatRelativeDate(s.dateTime)}</span>
+                      <span>
+                        {new Date(s.scheduled_at).toLocaleDateString('uz-UZ')}{' '}
+                        {new Date(s.scheduled_at).toLocaleTimeString('uz-UZ', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-                      <span>⏱️ {s.duration} daq</span>
+                      <span>⏱️ {s.duration_minutes || 60} daq</span>
                     </div>
                     <Badge
-                      label={s.status === 'scheduled' ? 'Rejalashtrildi' : 'Tugadi'}
+                      label={s.status === 'scheduled' ? 'Rejalashtrildi' : s.status}
                       variant={s.status === 'scheduled' ? 'info' : 'success'}
                     />
                   </div>
