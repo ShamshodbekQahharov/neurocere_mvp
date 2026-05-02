@@ -49,6 +49,12 @@ const doctorApi = {
 
   getNotifications: () =>
     api.get('/api/notifications'),
+
+  createChild: (data: any) =>
+    api.post('/api/children', data),
+
+  getReportsByChild: (childId: string) =>
+    api.get(`/api/reports/child/${childId}`),
 }
 
 export default api
