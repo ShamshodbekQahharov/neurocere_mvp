@@ -1,6 +1,8 @@
 import { useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useAuthStore } from '../../store/authStore'
 import { doctorApi } from '../../services/api'
+import { connectSocket, disconnectSocket, onNewMessage, offNewMessage } from '../../services/socket'
 import Badge from '../ui/Badge'
 
 export default function Header() {
@@ -8,6 +10,7 @@ export default function Header() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const { token } = useAuthStore()
 
   const pageTitleMap: Record<string, string> = {
     '/doctor': 'Dashboard',
@@ -29,6 +32,20 @@ export default function Header() {
   useEffect(() => {
     fetchNotifications()
   }, [])
+
+  useEffect(() => {
+    if (!token) return
+    const socket = connectSocket(token)
+    
+    onNewMessage(() => {
+      setUnreadCount(prev => prev + 1)
+    })
+
+    return () => {
+      offNewMessage()
+      disconnectSocket()
+    }
+  }, [token])
 
   const fetchNotifications = async () => {
     setLoading(true)

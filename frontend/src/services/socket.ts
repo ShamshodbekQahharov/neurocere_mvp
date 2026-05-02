@@ -1,50 +1,79 @@
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client'
 
-class SocketService {
-  private socket: Socket | null = null;
+let socket: Socket | null = null
 
-  connect(token: string): void {
-    if (this.socket?.connected) return;
+export const connectSocket = (token: string): Socket => {
+  if (socket?.connected) return socket
 
-    this.socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+  socket = io(
+    import.meta.env.VITE_API_URL || 'http://localhost:5000',
+    {
       auth: { token },
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-    });
-
-    this.socket.on('connect', () => {
-      console.log('Socket connected');
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
-  }
-
-  disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
+      reconnectionDelay: 1000,
+      transports: ['websocket', 'polling']
     }
-  }
+  )
 
-  onMessage(callback: (message: any) => void): void {
-    this.socket?.on('new_message', callback);
-  }
+  socket.on('connect', () => {
+    console.log('Socket ulandi:', socket?.id)
+  })
 
-  onSessionUpdate(callback: (session: any) => void): void {
-    this.socket?.on('session_completed', callback);
-    this.socket?.on('session_cancelled', callback);
-  }
+  socket.on('disconnect', (reason) => {
+    console.log('Socket uzildi:', reason)
+  })
 
-  emit(event: string, data: any): void {
-    this.socket?.emit(event, data);
-  }
+  socket.on('connect_error', (error) => {
+    console.error('Socket xato:', error.message)
+  })
 
-  joinRoom(room: string): void {
-    this.socket?.emit('join_room', room);
+  return socket
+}
+
+export const disconnectSocket = (): void => {
+  if (socket) {
+    socket.disconnect()
+    socket = null
   }
 }
 
-export const socketService = new SocketService();
+export const getSocket = (): Socket | null => socket
+
+export const joinChildRoom = (childId: string): void => {
+  socket?.emit('join_room', childId)
+}
+
+export const sendSocketMessage = (data: {
+  childId: string
+  content: string
+  receiverId: string
+}): void => {
+  socket?.emit('send_message', data)
+}
+
+export const onNewMessage = (
+  callback: (message: any) => void
+): void => {
+  socket?.on('new_message', callback)
+}
+
+export const onMessageRead = (
+  callback: (messageId: string) => void
+): void => {
+  socket?.on('message_read', callback)
+}
+
+export const offNewMessage = (): void => {
+  socket?.off('new_message')
+}
+
+export const offMessageRead = (): void => {
+  socket?.off('message_read')
+}
+
+export const offAllMessages = (): void => {
+  socket?.off('new_message')
+  socket?.off('message_read')
+}
