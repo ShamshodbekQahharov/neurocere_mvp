@@ -20,12 +20,13 @@ export default function GameMenuPage() {
       const children = childrenRes.data?.data?.children || []
       if (children.length > 0) {
         setChildName(children[0].full_name.split(' ')[0])
+        const childId = children[0].id
+        // Fetch child's game sessions
+        const sessionsRes = await api.get(`/api/games/sessions?child_id=${childId}`)
+        const sessions = sessionsRes.data?.data?.sessions || []
+        setGamesPlayed(sessions.length)
+        setTotalStars(sessions.reduce((sum: number, s: any) => sum + (s.score || 0), 0))
       }
-      
-      const sessionsRes = await api.get('/api/games/sessions')
-      const sessions = sessionsRes.data?.data?.sessions || []
-      setGamesPlayed(sessions.length)
-      setTotalStars(sessions.reduce((sum: number, s: any) => sum + (s.score || 0), 0))
     } catch (err) {
       console.error('Failed to fetch child data:', err)
     }
