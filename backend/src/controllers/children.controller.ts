@@ -161,6 +161,18 @@ export const getAllChildren = async (
           childrenData = [childData];
         }
       }
+    } else if (user.role === 'child') {
+      // Child sees their own profile
+      const { data, error } = await supabaseAdmin
+        .from('children')
+        .select('*')
+        .eq('child_user_id', user.id)
+        .eq('is_active', true);
+
+      if (error) {
+        throw error;
+      }
+      childrenData = data || [];
     } else {
       // Other roles - no access
       res.status(403).json({
@@ -466,7 +478,7 @@ export const getChildProgress = async (
       return;
     }
 
-    let hasAccess = false;
+let hasAccess = false;
     if (user.role === 'doctor') {
       hasAccess = child.doctor_id === user.id;
     } else if (user.role === 'parent') {
@@ -477,6 +489,8 @@ export const getChildProgress = async (
         .eq('child_id', id)
         .single();
       hasAccess = !!parentData;
+    } else if (user.role === 'child') {
+      hasAccess = child.child_user_id === user.id;
     }
 
     if (!hasAccess) {
