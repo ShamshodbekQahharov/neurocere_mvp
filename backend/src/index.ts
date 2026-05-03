@@ -13,6 +13,7 @@ import messagesRoutes from './routes/messages.routes'
 import sessionsRoutes from './routes/sessions.routes'
 import aiRoutes from './routes/ai.routes'
 import notificationsRoutes from './routes/notifications.routes'
+import gamesRoutes from './routes/games.routes'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -75,6 +76,7 @@ app.use('/api/messages', messagesRoutes)
 app.use('/api/sessions', sessionsRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/notifications', notificationsRoutes)
+app.use('/api/games', gamesRoutes)
 
 // 404 handler
 app.use('*', (req, res) => {
