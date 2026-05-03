@@ -14,6 +14,10 @@ export default function GameMenuPage() {
     fetchChildData()
   }, [])
 
+  useEffect(() => {
+    document.title = 'NeuroCare — O\'yinlar'
+  }, [])
+
   const fetchChildData = async () => {
     try {
       const childrenRes = await api.get('/api/children')

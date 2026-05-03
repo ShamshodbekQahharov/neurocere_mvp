@@ -22,6 +22,10 @@ export default function GamePage() {
     }
   }
 
+  useEffect(() => {
+    document.title = `NeuroCare — ${getGameTitle()}`
+  }, [gameId])
+
   const handleGameComplete = (finalScore: number, correct: number, total: number) => {
     setScore(finalScore)
     setCorrectAnswers(correct)

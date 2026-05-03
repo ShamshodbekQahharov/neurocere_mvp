@@ -50,11 +50,39 @@ const doctorApi = {
   getNotifications: () =>
     api.get('/api/notifications'),
 
+  // Sessions
+  getSessions: (status?: string) =>
+    api.get(`/api/sessions?status=${status || ''}`),
+
+  createSession: (data: any) =>
+    api.post('/api/sessions', data),
+
+  updateSession: (id: string, data: any) =>
+    api.put(`/api/sessions/${id}`, data),
+
+  completeSession: (id: string, data: { status: string; session_notes?: string }) =>
+    api.put(`/api/sessions/${id}`, data),
+
+  // Children
   createChild: (data: any) =>
     api.post('/api/children', data),
 
+  getChildren: () =>
+    api.get('/api/children'),
+
   getReportsByChild: (childId: string) =>
     api.get(`/api/reports/child/${childId}`),
+
+  // Games
+  getGames: () =>
+    api.get('/api/games'),
+
+  getGameSessions: () =>
+    api.get('/api/games/sessions'),
+
+  // Notifications
+  markNotificationRead: (id: string) =>
+    api.put(`/api/notifications/${id}/read`),
 }
 
 export default api

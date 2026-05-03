@@ -13,29 +13,44 @@ export default function ParentDashboardPage() {
     avgMood: 0
   })
   const [recentReports, setRecentReports] = useState<any[]>([])
+  const [children, setChildren] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboardData()
   }, [])
 
+  useEffect(() => {
+    document.title = 'NeuroCare — Dashboard'
+  }, [])
+
   const fetchDashboardData = async () => {
     try {
+      setError(null)
       // Get children to find childId
       const childrenRes = await api.get('/api/children')
-      const children = childrenRes.data?.data?.children || []
-      if (children.length === 0) return
+      const childrenData = childrenRes.data?.data?.children || []
+      setChildren(childrenData)
+      if (childrenData.length === 0) {
+        setLoading(false)
+        return
+      }
 
-      const childId = children[0].id
+      const childId = childrenData[0].id
 
-      // Get recent reports (last 5)
-      const reportsRes = await api.get('/api/reports', { params: { limit: 20 } })
-      setRecentReports(reportsRes.data?.data?.reports || [])
+      // Get recent reports for this child (parent uses child-specific endpoint)
+      if (childrenData.length > 0) {
+        const childId = childrenData[0].id
+        const reportsRes = await api.get(`/api/reports/child/${childId}`, { params: { limit: 20 } })
+        const reports = reportsRes.data?.data?.reports || []
+        setRecentReports(reports)
+      }
 
       // Count reports from last 7 days
       const weekAgo = new Date()
       weekAgo.setDate(weekAgo.getDate() - 7)
-      const weekly = (reportsRes.data?.data?.reports || []).filter((r: any) => {
+      const weekly = reports.filter((r: any) => {
         return new Date(r.report_date) >= weekAgo
       }).length
 
@@ -43,7 +58,7 @@ export default function ParentDashboardPage() {
       const sessionsRes = await api.get('/api/sessions/upcoming')
       const upcoming = (sessionsRes.data?.data?.sessions || []).find((s: any) => s.child_id === childId)
 
-      // Get progress
+      // Get progress stats
       try {
         const progressRes = await api.get(`/api/children/${childId}/progress`)
         setStats(prev => ({
@@ -55,13 +70,14 @@ export default function ParentDashboardPage() {
       }
 
       setStats(prev => ({
-        latestMood: reportsRes.data?.data?.reports?.[0]?.mood_score || 0,
+        latestMood: reports[0]?.mood_score || 0,
         weeklyReports: weekly,
         nextSession: upcoming || null,
         avgMood: stats.avgMood
       }))
-    } catch (error) {
+    } catch (error: any) {
       console.error('Dashboard data fetch error:', error)
+      setError('Ma\'lumotni yuklashda xatolik yuz berdi')
     } finally {
       setLoading(false)
     }
@@ -75,9 +91,32 @@ export default function ParentDashboardPage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button onClick={fetchDashboardData} className="text-blue-600 hover:underline">
+          Qayta urinish
+        </button>
+      </div>
+    )
+  }
+
+  if (children.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <p className="text-4xl mb-3">👶</p>
+        <p>Bolalar ro'yxati bo'sh</p>
+        <p className="text-sm mt-2">Doktor bilan bog'lanish</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Salom, {user?.name}</h1>
+      <h1 className="text-2xl font-bold text-gray-900">
+        Salom, {user?.full_name?.split(' ')[0] || 'Ota-ona'}
+      </h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

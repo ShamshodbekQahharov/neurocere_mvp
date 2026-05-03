@@ -68,6 +68,10 @@ export default function ChatPage() {
     fetchChildren()
   }, [])
 
+  useEffect(() => {
+    document.title = 'NeuroCare — Chat'
+  }, [])
+
   const fetchChildren = async () => {
     setLoading(true)
     try {

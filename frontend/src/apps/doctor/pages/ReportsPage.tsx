@@ -35,6 +35,10 @@ export default function ReportsPage() {
   }, [])
 
   useEffect(() => {
+    document.title = 'NeuroCare — Hisobotlar'
+  }, [])
+
+  useEffect(() => {
     if (children.length > 0 || selectedChild === 'all') {
       fetchReports()
     }

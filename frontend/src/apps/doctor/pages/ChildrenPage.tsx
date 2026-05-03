@@ -39,6 +39,10 @@ export default function ChildrenPage() {
     fetchChildren()
   }, [])
 
+  useEffect(() => {
+    document.title = 'NeuroCare — Bemorlar'
+  }, [])
+
   const fetchChildren = async () => {
     try {
       const res = await doctorApi.getChildrenCount()

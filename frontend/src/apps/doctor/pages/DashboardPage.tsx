@@ -16,7 +16,7 @@ type Report = {
 export default function DashboardPage() {
   // Stats
   const [childrenCount, setChildrenCount] = useState<number>(0)
-  const [recentReports, setRecentReports] = useState<number>(0)
+  const [reportsCount, setReportsCount] = useState<number>(0)
   const [unreadCount, setUnreadCount] = useState<number>(0)
 
   // Data
@@ -31,6 +31,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData()
+  }, [])
+
+  useEffect(() => {
+    document.title = 'NeuroCare — Dashboard'
   }, [])
 
   const fetchDashboardData = async () => {
@@ -56,11 +60,12 @@ export default function DashboardPage() {
         console.error('Children fetch error:', childrenRes.reason)
       }
 
-      // Reports
+      // Reports count & list
       if (reportsRes.status === 'fulfilled') {
         const d = reportsRes.value.data.data
-        setRecentReports(d?.reports?.length || 0)
-        setReports(Array.isArray(d?.reports) ? d.reports.slice(0, 5) : [])
+        const reportsList = d?.reports || []
+        setReportsCount(reportsList.length)
+        setReports(Array.isArray(reportsList) ? reportsList.slice(0, 5) : [])
       } else {
         console.error('Reports fetch error:', reportsRes.reason)
       }
@@ -90,10 +95,10 @@ export default function DashboardPage() {
     }
   }
 
-  const getConditionBadge = (condition: number) => {
-    if (condition <= 3) return { variant: 'danger' as const, label: `${condition}/10 - Katta bezovta` }
-    if (condition <= 6) return { variant: 'warning' as const, label: `${condition}/10 - O'rta` }
-    return { variant: 'success' as const, label: `${condition}/10 - Yaxshi` }
+  const getConditionBadge = (moodScore: number) => {
+    if (moodScore <= 3) return { variant: 'danger' as const, label: `${moodScore}/10 - Katta bezovta` }
+    if (moodScore <= 6) return { variant: 'warning' as const, label: `${moodScore}/10 - O'rta` }
+    return { variant: 'success' as const, label: `${moodScore}/10 - Yaxshi` }
   }
 
   const formatRelativeDate = (dateStr: string) => {
@@ -127,7 +132,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Yangi hisobotlar"
-          value={recentReports}
+          value={reportsCount}
           icon="📋"
           color="yellow"
           loading={loading}
@@ -181,49 +186,47 @@ export default function DashboardPage() {
               </div>
             ) : reports.length === 0 ? (
               <p className="text-gray-500 text-center py-8">Hisobot yo'q</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Bola ismi</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Sana</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Kayfiyat</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Vazifalar</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">AI tahlil</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reports.map((r: any) => {
-                      const badge = r.condition <= 3 ? { variant: 'danger' as const, label: `${r.condition}/10 - Katta bezovta` }
-                        : r.condition <= 6 ? { variant: 'warning' as const, label: `${r.condition}/10 - O'rta` }
-                        : { variant: 'success' as const, label: `${r.condition}/10 - Yaxshi` };
-                      return (
-                        <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
-                          <td className="py-3 px-2">
-                            <span className="font-medium text-gray-800">{r.childName}</span>
-                          </td>
-                          <td className="py-3 px-2 text-gray-500">
-                            {new Date(r.report_date).toLocaleDateString('uz-UZ')}
-                          </td>
-                          <td className="py-3 px-2">
-                            <Badge label={badge.label} variant={badge.variant} />
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="w-24">
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-blue-600 rounded-full" style={{width: `${r.tasks_completed}%`}} />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2">
-                            <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">
-                              Ko'rish
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
+             ) : (
+               <div className="overflow-x-auto">
+                 <table className="w-full text-sm">
+                   <thead>
+                     <tr className="border-b border-gray-100">
+                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Bola ismi</th>
+                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Sana</th>
+                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Kayfiyat</th>
+                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Vazifalar</th>
+                       <th className="text-left py-3 px-2 text-gray-500 font-medium">AI tahlil</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {reports.map((r: any) => {
+                       const badge = getConditionBadge(r.mood_score || 0)
+                       return (
+                         <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
+                           <td className="py-3 px-2">
+                             <span className="font-medium text-gray-800">{r.childName}</span>
+                           </td>
+                           <td className="py-3 px-2 text-gray-500">
+                             {new Date(r.report_date).toLocaleDateString('uz-UZ')}
+                           </td>
+                           <td className="py-3 px-2">
+                             <Badge label={badge.label} variant={badge.variant} />
+                           </td>
+                           <td className="py-3 px-2">
+                             <div className="w-24">
+                               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                 <div className="h-full bg-blue-600 rounded-full" style={{width: `${r.tasks_completed || 0}%`}} />
+                               </div>
+                             </div>
+                           </td>
+                           <td className="py-3 px-2">
+                             <button className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100 transition-colors">
+                               Ko'rish
+                             </button>
+                           </td>
+                         </tr>
+                       )
+                     })}
                   </tbody>
                 </table>
               </div>

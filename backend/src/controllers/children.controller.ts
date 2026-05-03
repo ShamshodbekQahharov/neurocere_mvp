@@ -142,8 +142,11 @@ export const getAllChildren = async (
         .single();
 
       if (parentError && parentError.code !== 'PGRST116') {
+        console.error('Parent data fetch error:', parentError);
         throw parentError;
       }
+
+      console.log('Parent data result:', { parentData, parentError });
 
       if (parentData?.child_id) {
         const { data: childData, error: childError } = await supabaseAdmin
@@ -154,12 +157,17 @@ export const getAllChildren = async (
           .single();
 
         if (childError && childError.code !== 'PGRST116') {
+          console.error('Child data fetch error:', childError);
           throw childError;
         }
+
+        console.log('Child data result:', { childData, childError });
 
         if (childData) {
           childrenData = [childData];
         }
+      } else {
+        console.log('No parentData.child_id for parent', user.id);
       }
     } else if (user.role === 'child') {
       // Child sees their own profile

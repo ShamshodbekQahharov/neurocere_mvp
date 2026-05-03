@@ -1,10 +1,15 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import Confetti from '../components/Confetti'
 
 export default function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { score, correctAnswers, totalQuestions, gameId } = location.state || {}
+
+  useEffect(() => {
+    document.title = 'NeuroCare — Natija'
+  }, [])
 
   const getResult = () => {
     if (score >= 80) {
