@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../../store/authStore'
 import api from '../../../services/api'
-import Card from '../../components/ui/Card'
-import Button from '../../components/ui/Button'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import Card from '../../../components/ui/Card'
+import Button from '../../../components/ui/Button'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -304,11 +304,11 @@ export default function ParentReportFormPage() {
                            level === 'fair' ? '😐' :
                            level === 'good' ? '🙂' : '😋'}
                         </div>
-                        <div className="text-xs text-gray-600 capitalize">
-                          {level === 'poor' ? 'Yomon' :
-                           level === 'fair' ? 'O'rtacha' :
-                           level === 'good' ? 'Yaxshi' : 'Ajoyib'}
-                        </div>
+                         <div className="text-xs text-gray-600 capitalize">
+                           {level === 'poor' ? 'Yomon' :
+                            level === 'fair' ? "O'rtacha" :
+                            level === 'good' ? 'Yaxshi' : 'Ajoyib'}
+                         </div>
                       </button>
                     ))}
                   </div>

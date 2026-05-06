@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { doctorApi } from '../../services/api'
-import Card from '../../components/ui/Card'
-import Button from '../../components/ui/Button'
-import Modal from '../../components/ui/Modal'
-import Input from '../../components/ui/Input'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
-import type { Session, Child } from '../../types'
+import { doctorApi } from '../../../services/api'
+import Card from '../../../components/ui/Card'
+import Button from '../../../components/ui/Button'
+import Modal from '../../../components/ui/Modal'
+import { Input } from '../../../components/ui/Input'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner'
+import type { Session, Child } from '../../../types'
 
 type SessionStatus = 'scheduled' | 'completed' | 'cancelled'
 

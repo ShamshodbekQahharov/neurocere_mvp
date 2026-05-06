@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '../../../store/authStore'
 import api from '../../../services/api'
-import Card from '../../components/ui/Card'
-import LoadingSpinner from '../../components/ui/LoadingSpinner'
+import Card from '../../../components/ui/Card'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner'
 
 type ProgressData = {
   child_id: string
@@ -196,10 +196,10 @@ export default function ParentProgressPage() {
             <div className="text-4xl">
               {getTrendIcon(stats?.tasks_trend || 'stable')}
             </div>
-            <p className="text-sm text-gray-500 mt-2 capitalize">
-              {stats?.tasks_trend === 'up' ? 'Oshiyapti' :
-               stats?.tasks_trend === 'down' ? 'Kamayiyapti' : 'O'zgarmagan'}
-            </p>
+             <p className="text-sm text-gray-500 mt-2 capitalize">
+               {stats?.tasks_trend === 'up' ? 'Oshiyapti' :
+                stats?.tasks_trend === 'down' ? 'Kamayiyapti' : "O'zgarmagan"}
+             </p>
           </Card>
         </div>
       )}
