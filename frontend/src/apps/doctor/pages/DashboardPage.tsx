@@ -89,7 +89,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error('Dashboard fetch error:', error)
-      setError('Ma\'lumot yuklanmadi. Qayta urinish tilimaydi.')
+       setError("Ma'lumot yuklanmadi. Qayta urinish tilimaydi.")
     } finally {
       setLoading(false)
     }

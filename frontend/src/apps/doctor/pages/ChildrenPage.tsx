@@ -128,12 +128,12 @@ export default function ChildrenPage() {
       ) : filteredChildren.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-6xl mb-4">👶</div>
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            {searchQuery ? 'Qidiruv natijasi yo\'q' : 'Hali bemor qo\'shilmagan'}
-          </h3>
-          <p className="text-gray-500 mb-6">
-            {searchQuery ? 'Boshqa so\'rov bilan sinab ko\'ring' : 'Birinchi bemorni qo\'shish uchun tugmani bosing'}
-          </p>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">
+              {searchQuery ? "Qidiruv natijasi yo'q" : 'Hali bemor qo\'shilmagan'}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {searchQuery ? "Boshqa so'rov bilan sinab ko'ring" : 'Birinchi bemorni qo\'shish uchun tugmani bosing'}
+            </p>
           {!searchQuery && (
             <button
               onClick={() => setShowAddModal(true)}
@@ -213,7 +213,7 @@ export default function ChildrenPage() {
       <Modal
         isOpen={!!selectedChild}
         onClose={() => setSelectedChild(null)}
-        title={selectedChild?.full_name || 'Bema\'lumotlar'}
+        title={selectedChild?.full_name || "Bema'lumotlar"}
         size="lg"
       >
         {selectedChild && (
@@ -241,9 +241,9 @@ export default function ChildrenPage() {
             
             <div>
               <p className="text-sm text-gray-500 mb-1">Izoh</p>
-              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
-                {selectedChild.notes || 'Izoh yo\'q'}
-              </p>
+               <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
+                 {selectedChild.notes || "Izoh yo'q"}
+               </p>
             </div>
 
             <div className="pt-4 border-t">

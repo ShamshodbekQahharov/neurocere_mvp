@@ -305,9 +305,9 @@ export default function ParentReportFormPage() {
                            level === 'good' ? '🙂' : '😋'}
                         </div>
                          <div className="text-xs text-gray-600 capitalize">
-                           {level === 'poor' ? 'Yomon' :
-                            level === 'fair' ? "O'rtacha" :
-                            level === 'good' ? 'Yaxshi' : 'Ajoyib'}
+                            {level === 'poor' ? "Yomon" :
+                             level === 'fair' ? "O'rtacha" :
+                             level === 'good' ? "Yaxshi" : "Ajoyib"}
                          </div>
                       </button>
                     ))}
@@ -393,11 +393,11 @@ export default function ParentReportFormPage() {
                     Uyqu: {formData.sleep_hours} soat
                   </p>
                   <p className="text-sm text-gray-600">
-                    Ichtimochi: {
-                      formData.appetite === 'poor' ? 'Yomon' :
-                      formData.appetite === 'fair' ? 'O\'rtacha' :
-                      formData.appetite === 'good' ? 'Yaxshi' : 'Ajoyib'
-                    }
+                     Ichtimochi: {
+                       formData.appetite === 'poor' ? "Yomon" :
+                       formData.appetite === 'fair' ? "O'rtacha" :
+                       formData.appetite === 'good' ? "Yaxshi" : "Ajoyib"
+                     }
                   </p>
                   <p className="text-sm text-gray-600">
                     Vazifalar: {formData.tasks_completed}%

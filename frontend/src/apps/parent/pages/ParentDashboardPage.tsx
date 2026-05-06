@@ -77,7 +77,7 @@ export default function ParentDashboardPage() {
       }))
     } catch (error: any) {
       console.error('Dashboard data fetch error:', error)
-      setError('Ma\'lumotni yuklashda xatolik yuz berdi')
+       setError("Ma'lumotni yuklashda xatolik yuz berdi")
     } finally {
       setLoading(false)
     }
