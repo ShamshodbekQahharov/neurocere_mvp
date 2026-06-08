@@ -81,6 +81,16 @@ const doctorApi = {
   // Notifications
   markNotificationRead: (id: string) =>
     api.put(`/api/notifications/${id}/read`),
+
+  // Invite — doctor creates parent & child accounts
+  createChildWithAccounts: (data: any) =>
+    api.post('/api/invite', data),
+
+  getInvitations: () =>
+    api.get('/api/invite'),
+
+  resetInvitePassword: (data: { user_id: string; new_password: string }) =>
+    api.post('/api/invite/reset-password', data),
 }
 
 export default api
