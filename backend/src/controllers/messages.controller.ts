@@ -271,7 +271,6 @@ export const sendMessage = async (
       const io = getIO();
       const roomName = `child_${child_id}`;
       io.to(roomName).emit('new_message', messageData);
-      console.log(`Socket.IO: Message emitted to room ${roomName}`);
     } catch (socketError) {
       console.warn('Socket.IO not available, message sent via API only');
     }
@@ -366,7 +365,6 @@ export const markAsRead = async (
         messageId: id,
         readAt: new Date().toISOString(),
       });
-      console.log(`Socket.IO: Marked message ${id} as read`);
     } catch (socketError) {
       console.warn('Socket.IO not available');
     }

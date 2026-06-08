@@ -79,10 +79,21 @@ export default function ParentChatPage() {
     try {
       const childrenRes = await api.get('/api/children')
       const children = childrenRes.data?.data?.children || []
-      if (children.length > 0) {
-        setChildId(children[0].id)
-        if (children[0].doctor_id) {
-          setDoctorId(children[0].doctor_id)
+      if (children.length === 0) return
+
+      const child = children[0]
+      setChildId(child.id)
+
+      if (child.doctor_id) {
+        setDoctorId(child.doctor_id)
+      } else {
+        // doctor_id list da yo'q — detail so'rov
+        try {
+          const detailRes = await api.get(`/api/children/${child.id}`)
+          const dId = detailRes.data?.data?.child?.doctor_id
+          if (dId) setDoctorId(dId)
+        } catch {
+          // silent
         }
       }
     } catch (err) {
@@ -94,7 +105,7 @@ export default function ParentChatPage() {
     if (!childId) return
     try {
       const res = await api.get(`/api/messages?child_id=${childId}`)
-      setMessages(res.data?.data || [])
+      setMessages(res.data?.data?.messages || [])
     } catch (err) {
       console.error('Failed to fetch messages:', err)
     }
@@ -107,18 +118,30 @@ export default function ParentChatPage() {
   }, [activeTab, childId])
 
   const handleSend = async () => {
-    if (!newMessage.trim() || !childId || !doctorId) return
+    if (!newMessage.trim()) return
+    if (!childId) {
+      toast.error("Bola ma'lumotlari topilmadi")
+      return
+    }
+    if (!doctorId) {
+      toast.error("Doktor ma'lumotlari topilmadi")
+      return
+    }
 
     setSending(true)
     try {
-      await api.post('/api/messages', {
+      const res = await api.post('/api/messages', {
         child_id: childId,
         receiver_id: doctorId,
         content: newMessage.trim()
       })
-      setNewMessage('')
-    } catch (err) {
-      toast.error("Xabar yuborilmadi")
+      if (res.data.success) {
+        setMessages(prev => [...prev, res.data.data.message])
+        setNewMessage('')
+        scrollToBottom()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Xabar yuborilmadi")
     } finally {
       setSending(false)
     }

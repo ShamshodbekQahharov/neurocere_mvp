@@ -17,14 +17,6 @@ export const connectSocket = (token: string): Socket => {
     }
   )
 
-  socket.on('connect', () => {
-    console.log('Socket ulandi:', socket?.id)
-  })
-
-  socket.on('disconnect', (reason) => {
-    console.log('Socket uzildi:', reason)
-  })
-
   socket.on('connect_error', (error) => {
     console.error('Socket xato:', error.message)
   })

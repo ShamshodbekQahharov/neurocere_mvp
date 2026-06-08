@@ -76,16 +76,35 @@ export default function ChatPage() {
     setLoading(true)
     try {
       const res = await doctorApi.getChildrenCount()
-      const childrenData = res.data?.data?.children || []
+      const childrenData: any[] = res.data?.data?.children || []
+
       const childrenWithParents = await Promise.all(
         childrenData.map(async (child: any) => {
+          // Try to get parent info from detail endpoint
+          let parentId: string | undefined
+          let parentName: string | undefined
+
+          if (child.parent_user_id) {
+            parentId = child.parent_user_id
+          }
+
+          try {
+            const detailRes = await api.get(`/api/children/${child.id}`)
+            const parentInfo = detailRes.data?.data?.parent
+            if (parentInfo) {
+              parentId = parentInfo.user_id || parentId
+              parentName = parentInfo.full_name
+            }
+          } catch {
+            // detail not available, use list data
+          }
+
           const childWithParent: Child = {
             id: child.id,
             full_name: child.full_name,
-            parent: child.parent ? {
-              id: child.parent.id || child.parent.user_id,
-              full_name: child.parent.full_name
-            } : undefined
+            parent: parentId
+              ? { id: parentId, full_name: parentName || 'Ota-ona' }
+              : undefined
           }
           return childWithParent
         })
@@ -102,7 +121,7 @@ export default function ChatPage() {
   const fetchMessages = async (childId: string) => {
     try {
       const res = await api.get(`/api/messages?child_id=${childId}`)
-      setMessages(res.data?.data || [])
+      setMessages(res.data?.data?.messages || [])
       scrollToBottom()
     } catch (err) {
       console.error('Failed to fetch messages:', err)
@@ -120,22 +139,26 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedChild) return
 
+    const receiverId = selectedChild.parent?.id
+    if (!receiverId) {
+      toast.error("Ota-ona ID topilmadi. Bemor to'liq ma'lumotlarini tekshiring.")
+      return
+    }
+
     setSending(true)
     try {
-      const receiverId = selectedChild.parent?.id
-      if (!receiverId) {
-        toast.error('Ota-ona ID topilmadi')
-        return
-      }
-      await api.post('/api/messages', {
+      const res = await api.post('/api/messages', {
         child_id: selectedChild.id,
         receiver_id: receiverId,
         content: newMessage.trim()
       })
-      setNewMessage('')
-      scrollToBottom()
-    } catch (err) {
-      toast.error("Xabar yuborilmadi")
+      if (res.data.success) {
+        setMessages(prev => [...prev, res.data.data.message])
+        setNewMessage('')
+        scrollToBottom()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Xabar yuborilmadi")
     } finally {
       setSending(false)
     }
