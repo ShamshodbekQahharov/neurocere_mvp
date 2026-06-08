@@ -52,15 +52,39 @@ export const createReport = async (
       return;
     }
 
-    // Validation: child belongs to parent
-    const { data: parentData, error: parentError } = await supabaseAdmin
+    // Validation: child belongs to parent (check parents table first, then children.parent_user_id)
+    let parentData: { id: string } | null = null;
+
+    const { data: existingParent } = await supabaseAdmin
       .from('parents')
       .select('id')
       .eq('user_id', user.id)
       .eq('child_id', child_id)
       .single();
 
-    if (parentError || !parentData) {
+    if (existingParent) {
+      parentData = existingParent;
+    } else {
+      // Fallback: check children.parent_user_id (old system)
+      const { data: childCheck } = await supabaseAdmin
+        .from('children')
+        .select('id')
+        .eq('id', child_id)
+        .eq('parent_user_id', user.id)
+        .single();
+
+      if (childCheck) {
+        // Create parents record so future operations work normally
+        const { data: newParent } = await supabaseAdmin
+          .from('parents')
+          .insert({ user_id: user.id, child_id, relation: 'parent' })
+          .select('id')
+          .single();
+        parentData = newParent;
+      }
+    }
+
+    if (!parentData) {
       res.status(403).json({
         success: false,
         error: 'Bu bolaga ruxsat yo\'q',
@@ -207,13 +231,23 @@ export const getReportsByChild = async (
         .single();
       hasAccess = !!childData;
     } else if (user.role === 'parent') {
-      const { data: parentData } = await supabaseAdmin
+      const { data: parentRow } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', user.id)
         .eq('child_id', childId)
         .single();
-      hasAccess = !!parentData;
+      if (parentRow) {
+        hasAccess = true;
+      } else {
+        const { data: childRow } = await supabaseAdmin
+          .from('children')
+          .select('id')
+          .eq('id', childId)
+          .eq('parent_user_id', user.id)
+          .single();
+        hasAccess = !!childRow;
+      }
     }
 
     if (!hasAccess) {
@@ -413,13 +447,23 @@ export const getReportById = async (
         .single();
       hasAccess = childData?.doctor_id === user.id;
     } else if (user.role === 'parent') {
-      const { data: parentData } = await supabaseAdmin
+      const { data: parentRow } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', user.id)
         .eq('child_id', report.child_id)
         .single();
-      hasAccess = !!parentData;
+      if (parentRow) {
+        hasAccess = true;
+      } else {
+        const { data: childRow } = await supabaseAdmin
+          .from('children')
+          .select('id')
+          .eq('id', report.child_id)
+          .eq('parent_user_id', user.id)
+          .single();
+        hasAccess = !!childRow;
+      }
     }
 
     if (!hasAccess) {
