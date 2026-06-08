@@ -37,6 +37,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedChildRef = useRef<Child | null>(null)
   const { user, token } = useAuthStore()
 
   const scrollToBottom = useCallback(() => {
@@ -48,12 +49,20 @@ export default function ChatPage() {
   }, [messages, scrollToBottom])
 
   useEffect(() => {
+    selectedChildRef.current = selectedChild
+  }, [selectedChild])
+
+  useEffect(() => {
     if (!token) return
-    const socket = connectSocket(token)
-    
+    connectSocket(token)
+
     onNewMessage((msg) => {
-      if (selectedChild && msg.child_id === selectedChild.id) {
-        setMessages(prev => [...prev, msg])
+      const current = selectedChildRef.current
+      if (current && msg.child_id === current.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
         scrollToBottom()
       }
     })
@@ -62,7 +71,7 @@ export default function ChatPage() {
       offNewMessage()
       disconnectSocket()
     }
-  }, [token, selectedChild, scrollToBottom])
+  }, [token, scrollToBottom])
 
   useEffect(() => {
     fetchChildren()

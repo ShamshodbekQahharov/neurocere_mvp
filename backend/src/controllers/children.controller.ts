@@ -134,33 +134,36 @@ export const getAllChildren = async (
       if (error) throw error;
       childrenData = data || [];
     } else if (user.role === 'parent') {
-      // Parent sees only their linked child
-      const { data: parentData, error: parentError } = await supabaseAdmin
+      // First try parents table
+      const { data: parentData } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', user.id)
         .single();
 
-      if (parentError && parentError.code !== 'PGRST116') {
-        console.error('Parent data fetch error:', parentError);
-        throw parentError;
-      }
-
       if (parentData?.child_id) {
-        const { data: childData, error: childError } = await supabaseAdmin
+        const { data: childData } = await supabaseAdmin
           .from('children')
-          .select('*')
+          .select('*, doctor:doctor_id(id, full_name)')
           .eq('id', parentData.child_id)
           .eq('is_active', true)
           .single();
 
-        if (childError && childError.code !== 'PGRST116') {
-          console.error('Child data fetch error:', childError);
-          throw childError;
-        }
-
         if (childData) {
           childrenData = [childData];
+        }
+      }
+
+      // Fallback: check children.parent_user_id (old system)
+      if (childrenData.length === 0) {
+        const { data: directChildren } = await supabaseAdmin
+          .from('children')
+          .select('*, doctor:doctor_id(id, full_name)')
+          .eq('parent_user_id', user.id)
+          .eq('is_active', true);
+
+        if (directChildren && directChildren.length > 0) {
+          childrenData = directChildren;
         }
       }
     } else if (user.role === 'child') {

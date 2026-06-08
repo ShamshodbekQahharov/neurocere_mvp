@@ -64,7 +64,10 @@ export default function ParentChatPage() {
       joinChildRoom(childId)
       
       onNewMessage((msg) => {
-        setMessages(prev => [...prev, msg])
+        setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev
+          return [...prev, msg]
+        })
         scrollToBottom()
       })
 
@@ -86,15 +89,9 @@ export default function ParentChatPage() {
 
       if (child.doctor_id) {
         setDoctorId(child.doctor_id)
-      } else {
-        // doctor_id list da yo'q — detail so'rov
-        try {
-          const detailRes = await api.get(`/api/children/${child.id}`)
-          const dId = detailRes.data?.data?.child?.doctor_id
-          if (dId) setDoctorId(dId)
-        } catch {
-          // silent
-        }
+      }
+      if (child.doctor?.full_name) {
+        setDoctorName(child.doctor.full_name)
       }
     } catch (err) {
       console.error('Failed to fetch child data:', err)
