@@ -313,20 +313,15 @@ export const getAllReports = async (
     let reportsData: any[] = [];
     let count = 0;
     try {
-      console.log('Fetching reports for children:', childIds);
       const { data, error, count: c } = await supabaseAdmin
         .from('reports')
         .select('*', { count: 'exact' })
         .in('child_id', childIds)
         .order('report_date', { ascending: false });
-      console.log('Reports fetch result - error:', error?.message, 'count:', c, 'data len:', data?.length);
       if (error) throw error;
       reportsData = data || [];
       count = c || 0;
-      console.log('Applying pagination offset=', offset, 'limit=', limit);
-      // Apply pagination manually
       reportsData = reportsData.slice(offset, offset + limit);
-      console.log('Reports after pagination:', reportsData.length);
     } catch (err) {
       console.error('Error fetching reports:', err);
       res.status(200).json({
@@ -370,7 +365,6 @@ export const getAllReports = async (
     });
   } catch (error: any) {
     console.error('Get all reports error:', error);
-    console.error('Stack:', error?.stack);
     const errorMessage = error?.message || 'Hisobotlarni olishda xatolik yuz berdi';
     res.status(500).json({
       success: false,
@@ -506,7 +500,6 @@ export const getReportStats = async (
       .order('report_date', { ascending: true });
        
         if (error) {
-          console.error('Error fetching reports for stats:', error);
           // Return empty stats if error (e.g., table doesn't exist)
           res.status(200).json({
             success: true,
@@ -529,7 +522,6 @@ export const getReportStats = async (
         }
         reports = data || [];
       } catch (err) {
-        console.error('Exception fetching reports for stats:', err);
         res.status(200).json({
           success: true,
           data: {

@@ -56,7 +56,7 @@ export default function Sidebar() {
         </button>
         {user && (
           <div className="mt-4 px-4 py-3 text-blue-200 text-sm opacity-75">
-            <div className="font-medium">{user.firstName} {user.lastName}</div>
+            <div className="font-medium">{user.full_name}</div>
             <div className="opacity-75">{user.email}</div>
           </div>
         )}

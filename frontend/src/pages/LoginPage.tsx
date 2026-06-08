@@ -26,11 +26,8 @@ export default function LoginPage() {
     try {
       const result = await login(email, password)
       
-      console.log('Login natija:', result)
-      
       if (result.success) {
         const role = result.user?.role
-        console.log('Role:', role)
         
         if (role === 'doctor') navigate('/doctor')
         else if (role === 'parent') navigate('/parent')

@@ -40,10 +40,10 @@ export default function ParentDashboardPage() {
       const childId = childrenData[0].id
 
       // Get recent reports for this child (parent uses child-specific endpoint)
+      let reports: any[] = []
       if (childrenData.length > 0) {
-        const childId = childrenData[0].id
         const reportsRes = await api.get(`/api/reports/child/${childId}`, { params: { limit: 20 } })
-        const reports = reportsRes.data?.data?.reports || []
+        reports = reportsRes.data?.data?.reports || []
         setRecentReports(reports)
       }
 
@@ -65,12 +65,12 @@ export default function ParentDashboardPage() {
           ...prev,
           avgMood: progressRes.data?.data?.stats?.avg_mood || 0
         }))
-      } catch (e) {
-        console.log('Progress endpoint not available')
+      } catch {
+        // Progress endpoint not available
       }
 
       setStats(prev => ({
-        latestMood: reports[0]?.mood_score || 0,
+        latestMood: (reports as any[])[0]?.mood_score || 0,
         weeklyReports: weekly,
         nextSession: upcoming || null,
         avgMood: stats.avgMood

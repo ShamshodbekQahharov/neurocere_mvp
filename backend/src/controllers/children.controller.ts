@@ -146,8 +146,6 @@ export const getAllChildren = async (
         throw parentError;
       }
 
-      console.log('Parent data result:', { parentData, parentError });
-
       if (parentData?.child_id) {
         const { data: childData, error: childError } = await supabaseAdmin
           .from('children')
@@ -161,13 +159,9 @@ export const getAllChildren = async (
           throw childError;
         }
 
-        console.log('Child data result:', { childData, childError });
-
         if (childData) {
           childrenData = [childData];
         }
-      } else {
-        console.log('No parentData.child_id for parent', user.id);
       }
     } else if (user.role === 'child') {
       // Child sees their own profile

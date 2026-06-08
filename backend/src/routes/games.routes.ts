@@ -50,7 +50,7 @@ router.post('/session', authenticate, async (req, res) => {
       })
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data: session, error } = await supabaseAdmin
       .from('game_sessions')
       .insert({
         child_id,
@@ -72,10 +72,54 @@ router.post('/session', authenticate, async (req, res) => {
       })
     }
 
+    const { data: childData } = await supabaseAdmin
+      .from('children')
+      .select('doctor_id, parent_user_id, full_name')
+      .eq('id', child_id)
+      .single()
+
+    if (childData) {
+      const scoreText =
+        score >= 80 ? 'Ajoyib natija! 🌟' :
+        score >= 50 ? 'Yaxshi harakat! 👍' :
+        'Davom eting! 💪'
+
+      const gameNames: Record<string, string> = {
+        'word-match': "So'z topish",
+        'memory': 'Xotira o\'yini',
+        'sorting': 'Saralash'
+      }
+      const gameName = gameNames[game_id] || 'O\'yin'
+
+      if (childData.doctor_id) {
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: childData.doctor_id,
+            title: "Yangi o'yin natijasi",
+            body: `${childData.full_name} — ` +
+                  `${gameName}: ${score}/100. ` +
+                  `${correct_answers}/${total_questions} to'g'ri`,
+            type: 'game_result'
+          })
+      }
+
+      if (childData.parent_user_id) {
+        await supabaseAdmin
+          .from('notifications')
+          .insert({
+            user_id: childData.parent_user_id,
+            title: "Farzandingiz o'yin o'ynadi!",
+            body: `${gameName}: ${scoreText} (${score}/100)`,
+            type: 'game_result'
+          })
+      }
+    }
+
     res.json({
       success: true,
       message: "Natija saqlandi",
-      data: { session: data }
+      data: { session }
     })
   } catch (err: any) {
     res.status(500).json({
@@ -146,7 +190,7 @@ router.get('/child/:childId', authenticate, async (req, res) => {
     const sessions = data || []
     const total = sessions.length
     const avgScore = total > 0
-      ? Math.round(sessions.reduce((s, g) => s + (g.score || 0), 0) / total)
+      ? Math.round(sessions.reduce((s: any, g: any) => s + (g.score || 0), 0) / total)
       : 0
 
     res.json({

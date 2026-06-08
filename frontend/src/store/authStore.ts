@@ -16,8 +16,7 @@ export const useAuthStore = create<AuthState>()(
            set({ isLoading: true })
            
            const response = await api.post('/api/auth/login', { email, password });
-           console.log('API response:', response.data)
-           
+
            if (response.data.success) {
              const { token, user } = response.data.data;
            

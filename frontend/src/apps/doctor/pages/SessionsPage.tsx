@@ -121,7 +121,7 @@ export default function SessionsPage() {
     return child?.full_name || 'Nomalum'
   }
 
-  const formatDateTime = (dateStr: string) => {
+  const formatDateTime = (dateStr: string | Date) => {
     const date = new Date(dateStr)
     return {
       date: date.toLocaleDateString('uz-UZ'),
@@ -210,7 +210,7 @@ export default function SessionsPage() {
                       <>
                         <Button
                           size="sm"
-                          variant="success"
+                          variant="primary"
                           onClick={() => {
                             const notes = prompt('Sessiya haqida izoh (ixtiyoriy):', '')
                             if (notes !== null) handleCompleteSession(session.id, notes)

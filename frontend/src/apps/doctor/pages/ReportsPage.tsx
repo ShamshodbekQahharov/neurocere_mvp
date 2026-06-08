@@ -16,6 +16,7 @@ type Report = {
   appetite?: 'poor' | 'fair' | 'good' | 'excellent'
   tasks_completed: number
   ai_summary?: string
+  notes?: string
 }
 
 type Child = {
