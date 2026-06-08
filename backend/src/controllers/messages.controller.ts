@@ -40,13 +40,23 @@ export const getMessages = async (
         .single();
       hasAccess = !!childData;
     } else if (user.role === 'parent') {
-      const { data: parentData } = await supabaseAdmin
+      const { data: parentRow } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', user.id)
         .eq('child_id', child_id)
         .single();
-      hasAccess = !!parentData;
+      if (parentRow) {
+        hasAccess = true;
+      } else {
+        const { data: childRow } = await supabaseAdmin
+          .from('children')
+          .select('id')
+          .eq('id', child_id)
+          .eq('parent_user_id', user.id)
+          .single();
+        hasAccess = !!childRow;
+      }
     }
 
     if (!hasAccess) {
@@ -181,13 +191,23 @@ export const sendMessage = async (
         .single();
       userHasAccess = !!childData;
     } else if (user.role === 'parent') {
-      const { data: parentData } = await supabaseAdmin
+      const { data: parentRow } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', user.id)
         .eq('child_id', child_id)
         .single();
-      userHasAccess = !!parentData;
+      if (parentRow) {
+        userHasAccess = true;
+      } else {
+        const { data: childRow } = await supabaseAdmin
+          .from('children')
+          .select('id')
+          .eq('id', child_id)
+          .eq('parent_user_id', user.id)
+          .single();
+        userHasAccess = !!childRow;
+      }
     }
 
     if (!userHasAccess) {
@@ -208,13 +228,23 @@ export const sendMessage = async (
         .single();
       receiverHasAccess = !!childData;
     } else if (receiverData.role === 'parent') {
-      const { data: parentData } = await supabaseAdmin
+      const { data: parentRow } = await supabaseAdmin
         .from('parents')
         .select('child_id')
         .eq('user_id', receiver_id)
         .eq('child_id', child_id)
         .single();
-      receiverHasAccess = !!parentData;
+      if (parentRow) {
+        receiverHasAccess = true;
+      } else {
+        const { data: childRow } = await supabaseAdmin
+          .from('children')
+          .select('id')
+          .eq('id', child_id)
+          .eq('parent_user_id', receiver_id)
+          .single();
+        receiverHasAccess = !!childRow;
+      }
     }
 
     if (!receiverHasAccess) {
