@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { doctorApi } from '../../../services/api'
 import Modal from '../../../components/ui/Modal'
 import toast from 'react-hot-toast'
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const api = axios.create({ baseURL: BASE_URL, headers: { 'Content-Type': 'application/json' }, timeout: 30000 })
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
 
 type Child = {
   id: string
@@ -45,8 +54,28 @@ export default function ChildrenPage() {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null)
   const [credentials, setCredentials] = useState<CreatedCredentials | null>(null)
 
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [editForm, setEditForm] = useState({
+    full_name: '', birth_date: '', diagnosis: '', icd_code: '', notes: '',
+  })
+
   useEffect(() => { fetchChildren() }, [])
   useEffect(() => { document.title = 'NeuroCare — Bemorlar' }, [])
+
+  useEffect(() => {
+    if (selectedChild && showEditModal) {
+      setEditForm({
+        full_name: selectedChild.full_name || '',
+        birth_date: selectedChild.birth_date || '',
+        diagnosis: selectedChild.diagnosis || '',
+        icd_code: selectedChild.icd_code || '',
+        notes: selectedChild.notes || '',
+      })
+    }
+  }, [selectedChild, showEditModal])
 
   const fetchChildren = async () => {
     try {
@@ -56,6 +85,40 @@ export default function ChildrenPage() {
       toast.error('Bolalarni yuklashda xatolik')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleEditSubmit = async () => {
+    if (!selectedChild) return
+    setEditLoading(true)
+    try {
+      await api.put(`/api/children/${selectedChild.id}`, editForm)
+      toast.success("Bemor ma'lumotlari yangilandi!")
+      setShowEditModal(false)
+      setSelectedChild(null)
+      const res = await api.get('/api/children')
+      setChildren(res.data.data?.children || [])
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Xatolik yuz berdi')
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selectedChild) return
+    setDeleteLoading(true)
+    try {
+      await api.delete(`/api/children/${selectedChild.id}`)
+      toast.success(`${selectedChild.full_name} arxivlandi`)
+      setShowDeleteModal(false)
+      setSelectedChild(null)
+      const res = await api.get('/api/children')
+      setChildren(res.data.data?.children || [])
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Xatolik yuz berdi')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -187,10 +250,18 @@ export default function ChildrenPage() {
                   Batafsil
                 </button>
                 <button
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm hover:bg-gray-100 transition-colors text-center"
+                  onClick={(e) => { e.stopPropagation(); setSelectedChild(child); setShowEditModal(true) }}
+                  className="px-3 py-2 bg-amber-50 text-amber-600 rounded-lg text-sm hover:bg-amber-100 transition-colors"
+                  title="Tahrirlash"
                 >
-                  Hisobotlar
+                  ✏️
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedChild(child); setShowDeleteModal(true) }}
+                  className="px-3 py-2 bg-red-50 text-red-500 rounded-lg text-sm hover:bg-red-100 transition-colors"
+                  title="Arxivlash"
+                >
+                  🗑️
                 </button>
               </div>
             </div>
@@ -213,7 +284,7 @@ export default function ChildrenPage() {
 
       {/* Child Detail Modal */}
       <Modal
-        isOpen={!!selectedChild}
+        isOpen={!!selectedChild && !showEditModal && !showDeleteModal}
         onClose={() => setSelectedChild(null)}
         title={selectedChild?.full_name || ''}
         size="lg"
@@ -255,6 +326,114 @@ export default function ChildrenPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setSelectedChild(null) }}
+        title="Bemor ma'lumotlarini tahrirlash"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">To'liq ism *</label>
+            <input
+              type="text"
+              value={editForm.full_name}
+              onChange={e => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tug'ilgan sana *</label>
+            <input
+              type="date"
+              value={editForm.birth_date}
+              onChange={e => setEditForm(prev => ({ ...prev, birth_date: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tashxis *</label>
+            <select
+              value={editForm.diagnosis}
+              onChange={e => setEditForm(prev => ({ ...prev, diagnosis: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Tanlang</option>
+              {DIAGNOSIS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">ICD kodi</label>
+            <input
+              type="text"
+              value={editForm.icd_code}
+              onChange={e => setEditForm(prev => ({ ...prev, icd_code: e.target.value }))}
+              placeholder="F80.1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Izohlar</label>
+            <textarea
+              value={editForm.notes}
+              onChange={e => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={handleEditSubmit}
+              disabled={editLoading || !editForm.full_name}
+              className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {editLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
+            <button
+              onClick={() => { setShowEditModal(false); setSelectedChild(null) }}
+              className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+            >
+              Bekor qilish
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setSelectedChild(null) }}
+        title="Bemorni arxivlash"
+        size="sm"
+      >
+        <div className="text-center py-4">
+          <div className="text-5xl mb-4">⚠️</div>
+          <p className="text-gray-700 mb-2 font-medium">Rostdan ham arxivlamoqchimisiz?</p>
+          <p className="text-gray-500 text-sm mb-6">
+            <strong>{selectedChild?.full_name}</strong> profili arxivlanadi.
+            Istalgan vaqt qayta tiklash mumkin.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="flex-1 bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 disabled:opacity-50"
+            >
+              {deleteLoading ? 'Arxivlanmoqda...' : 'Ha, arxivlash'}
+            </button>
+            <button
+              onClick={() => { setShowDeleteModal(false); setSelectedChild(null) }}
+              className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50"
+            >
+              Bekor qilish
+            </button>
+          </div>
+        </div>
       </Modal>
 
       {/* Credentials Modal */}
