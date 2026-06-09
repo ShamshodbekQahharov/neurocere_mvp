@@ -27,7 +27,7 @@ interface ResetPasswordBody {
 }
 
 interface AuthenticatedRequest extends Request {
-  user: { id: string; role: string }
+  user: { id: string; role: string; email: string; full_name: string }
 }
 
 export const createChildWithAccounts = async (

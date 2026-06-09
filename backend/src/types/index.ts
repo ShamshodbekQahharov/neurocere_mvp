@@ -1,5 +1,22 @@
 // TypeScript Type Definitions for NeuroCare Platform
 
+import { Request } from 'express'
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string
+        email: string
+        role: string
+        full_name: string
+      }
+    }
+  }
+}
+
+export {}
+
 export type UserRole = 'doctor' | 'parent' | 'child' | 'admin' | 'super_admin';
 
 export interface User {
@@ -52,7 +69,7 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export interface AuthenticatedRequest extends Express.Request {
+export interface AuthenticatedRequest extends Request {
   user: User;
 }
 

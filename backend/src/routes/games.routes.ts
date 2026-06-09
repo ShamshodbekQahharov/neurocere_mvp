@@ -1,11 +1,11 @@
-import { Router } from 'express'
+import { Router, Request, Response } from 'express'
 import { authenticate } from '../middleware/auth.middleware'
 import { supabaseAdmin } from '../config/supabase'
 
 const router = Router()
 
 // GET /api/games — o'yinlar katalogi
-router.get('/', authenticate, async (req, res) => {
+router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('games')
@@ -32,7 +32,7 @@ router.get('/', authenticate, async (req, res) => {
 })
 
 // POST /api/games/session — natija saqlash
-router.post('/session', authenticate, async (req, res) => {
+router.post('/session', authenticate, async (req: Request, res: Response) => {
   try {
     const {
       child_id,
@@ -130,7 +130,7 @@ router.post('/session', authenticate, async (req, res) => {
 })
 
 // GET /api/games/sessions — bola sessiyalari
-router.get('/sessions', authenticate, async (req, res) => {
+router.get('/sessions', authenticate, async (req: Request, res: Response) => {
   try {
     const child_id = req.query.child_id as string | undefined
     const user = (req as any).user
@@ -170,7 +170,7 @@ router.get('/sessions', authenticate, async (req, res) => {
 })
 
 // GET /api/games/child/:childId — bola statistika
-router.get('/child/:childId', authenticate, async (req, res) => {
+router.get('/child/:childId', authenticate, async (req: Request, res: Response) => {
   try {
     const { childId } = req.params
 
