@@ -62,6 +62,19 @@ export default function ChildrenPage() {
     full_name: '', birth_date: '', diagnosis: '', icd_code: '', notes: '',
   })
 
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [detailChild, setDetailChild] = useState<any>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  const openDetail = (child: Child) => {
+    setDetailLoading(true)
+    setShowDetailModal(true)
+    api.get(`/api/children/${child.id}`)
+      .then(res => { setDetailChild(res.data.data.child) })
+      .catch(() => { toast.error("Ma'lumot yuklanmadi"); setShowDetailModal(false) })
+      .finally(() => setDetailLoading(false))
+  }
+
   useEffect(() => { fetchChildren() }, [])
   useEffect(() => { document.title = 'NeuroCare — Bemorlar' }, [])
 
@@ -223,7 +236,7 @@ export default function ChildrenPage() {
           {filteredChildren.map((child) => (
             <div
               key={child.id}
-              onClick={() => setSelectedChild(child)}
+              onClick={() => openDetail(child)}
               className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer"
             >
               <div className="flex items-start justify-between mb-3">
@@ -244,7 +257,7 @@ export default function ChildrenPage() {
               </p>
               <div className="mt-3 pt-3 border-t border-gray-100 flex gap-2">
                 <button
-                  onClick={(e) => { e.stopPropagation(); setSelectedChild(child) }}
+                  onClick={(e) => { e.stopPropagation(); openDetail(child) }}
                   className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100 transition-colors text-center"
                 >
                   Batafsil
@@ -284,48 +297,21 @@ export default function ChildrenPage() {
 
       {/* Child Detail Modal */}
       <Modal
-        isOpen={!!selectedChild && !showEditModal && !showDeleteModal}
-        onClose={() => setSelectedChild(null)}
-        title={selectedChild?.full_name || ''}
+        isOpen={showDetailModal}
+        onClose={() => { setShowDetailModal(false); setDetailChild(null) }}
+        title={detailChild?.full_name || 'Yuklanmoqda...'}
         size="lg"
       >
-        {selectedChild && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Tug'ilgan sana</p>
-                <p className="font-medium">{selectedChild.birth_date}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Yosh</p>
-                <p className="font-medium">{formatAge(selectedChild.birth_date)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Tashxis</p>
-                <span
-                  className={`inline-block px-2.5 py-1 rounded-full text-xs font-medium mt-1 ${
-                    DIAGNOSIS_COLORS[selectedChild.diagnosis] || DIAGNOSIS_COLORS.other
-                  }`}
-                >
-                  {selectedChild.diagnosis || 'Boshqa'}
-                </span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">ICD kod</p>
-                <p className="font-medium">{selectedChild.icd_code || '-'}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Izoh</p>
-              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">
-                {selectedChild.notes || "Izoh yo'q"}
-              </p>
-            </div>
-            <div className="pt-4 border-t">
-              <p className="text-xs text-gray-400">ID: {selectedChild.id}</p>
-            </div>
+        {detailLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-blue-600" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
           </div>
-        )}
+        ) : detailChild ? (
+          <ChildDetailTabs child={detailChild} formatAge={formatAge} />
+        ) : null}
       </Modal>
 
       {/* Edit Modal */}
@@ -443,6 +429,198 @@ export default function ChildrenPage() {
           onClose={() => setCredentials(null)}
         />
       )}
+    </div>
+  )
+}
+
+// ─── Child Detail Tabs ───────────────────────────────────────────────────────
+
+type DetailTabsProps = {
+  child: any
+  formatAge: (d: string) => string
+}
+
+function ChildDetailTabs({ child, formatAge }: DetailTabsProps) {
+  const [tab, setTab] = useState<'info' | 'parent' | 'childLogin' | 'stats'>('info')
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => toast.success(`${label} nusxa olindi!`))
+  }
+
+  const tabs = [
+    { key: 'info', label: '📋 Asosiy' },
+    { key: 'parent', label: '👨‍👩‍👧 Ota-ona' },
+    { key: 'childLogin', label: '🎮 Bola login' },
+    { key: 'stats', label: '📊 Statistika' },
+  ] as const
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="text-3xl">👶</div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                DIAGNOSIS_COLORS[child.diagnosis] || DIAGNOSIS_COLORS.other
+              }`}
+            >
+              {child.diagnosis || 'Boshqa'}
+            </span>
+            <span className="text-sm text-gray-500">{formatAge(child.birth_date)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1">
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              tab === t.key ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab: Asosiy */}
+      {tab === 'info' && (
+        <div className="space-y-3">
+          <Row label="To'liq ism" value={child.full_name} />
+          <Row label="Tug'ilgan sana" value={child.birth_date} />
+          <Row label="Yoshi" value={formatAge(child.birth_date)} />
+          <Row label="Tashxis" value={child.diagnosis || 'Boshqa'} />
+          <Row label="ICD kodi" value={child.icd_code || '—'} />
+          {child.notes && (
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Izoh</p>
+              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{child.notes}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Ota-ona */}
+      {tab === 'parent' && (
+        <div>
+          {child.parent ? (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-3">
+              <p className="font-semibold text-green-900 text-base">👤 {child.parent.full_name}</p>
+              {child.parent.phone && (
+                <p className="text-sm text-gray-700 flex items-center gap-2">
+                  <span>📞</span> {child.parent.phone}
+                </p>
+              )}
+              <p className="text-sm text-gray-700 flex items-center gap-2">
+                <span>📧</span> {child.parent.email}
+              </p>
+              <div className="border-t border-green-200 pt-3 mt-2">
+                <p className="text-xs font-semibold text-green-800 mb-2">LOGIN MA'LUMOTLARI</p>
+                <p className="text-sm font-mono text-gray-800">📧 {child.parent.login.email}</p>
+                {child.parent.login.temp_password ? (
+                  <p className="text-sm font-mono text-gray-800 mt-1">🔑 {child.parent.login.temp_password}</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">Parol mavjud emas</p>
+                )}
+              </div>
+              <button
+                onClick={() => copy(
+                  `Ota-ona login:\nEmail: ${child.parent.login.email}\nParol: ${child.parent.login.temp_password || '—'}`,
+                  'Ota-ona login'
+                )}
+                className="w-full mt-2 px-4 py-2 bg-green-700 text-white rounded-lg text-sm hover:bg-green-800 transition-colors"
+              >
+                📋 Nusxa olish
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <p className="text-4xl mb-2">👤</p>
+              <p className="text-sm">Login ma'lumotlari topilmadi.</p>
+              <p className="text-xs mt-1">Bemor invite tizimi orqali qo'shilmagan.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Bola login */}
+      {tab === 'childLogin' && (
+        <div>
+          {child.child_login ? (
+            <div className="bg-purple-50 border border-purple-200 rounded-xl p-5 space-y-3">
+              <p className="font-semibold text-purple-900 text-base">🎮 {child.child_login.full_name}</p>
+              <div className="border-t border-purple-200 pt-3">
+                <p className="text-xs font-semibold text-purple-800 mb-2">BOLA TIZIMGA KIRISH</p>
+                <p className="text-sm font-mono text-gray-800">📧 {child.child_login.email}</p>
+                {child.child_login.temp_password ? (
+                  <p className="text-sm font-mono text-gray-800 mt-1">🔑 {child.child_login.temp_password}</p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">Parol mavjud emas</p>
+                )}
+              </div>
+              <button
+                onClick={() => copy(
+                  `Bola login:\nEmail: ${child.child_login.email}\nParol: ${child.child_login.temp_password || '—'}`,
+                  'Bola login'
+                )}
+                className="w-full mt-2 px-4 py-2 bg-purple-700 text-white rounded-lg text-sm hover:bg-purple-800 transition-colors"
+              >
+                📋 Nusxa olish
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <p className="text-4xl mb-2">🎮</p>
+              <p className="text-sm">Login ma'lumotlari topilmadi.</p>
+              <p className="text-xs mt-1">Bemor invite tizimi orqali qo'shilmagan.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Statistika */}
+      {tab === 'stats' && (
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="Hisobotlar" value={child.stats?.total_reports ?? 0} unit="ta" color="blue" />
+          <StatCard label="O'rtacha kayfiyat" value={child.stats?.avg_mood ?? '—'} unit="/10" color="green" />
+          <StatCard label="Sessiyalar" value={child.stats?.total_sessions ?? 0} unit="ta" color="indigo" />
+          <StatCard label="Bajarilgan" value={child.stats?.completed_sessions ?? 0} unit="ta" color="teal" />
+          <StatCard label="O'yinlar" value={child.stats?.total_games ?? 0} unit="ta" color="purple" />
+          <StatCard label="O'rtacha ball" value={child.stats?.avg_game_score ?? '—'} unit="%" color="orange" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm font-medium text-gray-800">{value}</span>
+    </div>
+  )
+}
+
+const STAT_COLORS: Record<string, string> = {
+  blue: 'bg-blue-50 text-blue-700 border-blue-100',
+  green: 'bg-green-50 text-green-700 border-green-100',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  teal: 'bg-teal-50 text-teal-700 border-teal-100',
+  purple: 'bg-purple-50 text-purple-700 border-purple-100',
+  orange: 'bg-orange-50 text-orange-700 border-orange-100',
+}
+
+function StatCard({ label, value, unit, color }: { label: string; value: any; unit: string; color: string }) {
+  return (
+    <div className={`rounded-xl p-4 border ${STAT_COLORS[color] || STAT_COLORS.blue}`}>
+      <p className="text-xs font-medium opacity-70 mb-1">{label}</p>
+      <p className="text-2xl font-bold">{value}<span className="text-sm font-normal ml-1">{unit}</span></p>
     </div>
   )
 }

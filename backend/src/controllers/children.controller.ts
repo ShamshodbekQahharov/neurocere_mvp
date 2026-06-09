@@ -216,7 +216,6 @@ export const getChildById = async (
     const { id } = req.params;
     const user = (req as any).user as User;
 
-    // Get child
     const { data: child, error: childError } = await supabaseAdmin
       .from('children')
       .select('*')
@@ -225,96 +224,115 @@ export const getChildById = async (
       .single();
 
     if (childError || !child) {
-      res.status(404).json({
-        success: false,
-        error: 'Bola topilmadi',
-      });
+      res.status(404).json({ success: false, error: 'Bola topilmadi' });
       return;
     }
 
-    // Check access
+    // Access check
     let hasAccess = false;
-
     if (user.role === 'doctor') {
       hasAccess = child.doctor_id === user.id;
     } else if (user.role === 'parent') {
-      const { data: parentData, error: parentError } = await supabaseAdmin
-        .from('parents')
-        .select('child_id')
-        .eq('user_id', user.id)
-        .eq('child_id', id)
-        .single();
-
-      if (!parentError && parentData) {
-        hasAccess = true;
-      } else if (child.parent_user_id === user.id) {
-        hasAccess = true;
-      }
+      const { data: pRel } = await supabaseAdmin
+        .from('parents').select('child_id').eq('user_id', user.id).eq('child_id', id).single();
+      hasAccess = !!pRel || child.parent_user_id === user.id;
+    } else if (user.role === 'child') {
+      hasAccess = child.child_user_id === user.id;
     }
 
     if (!hasAccess) {
-      res.status(403).json({
-        success: false,
-        error: 'Ruxsat yo\'q',
-      });
+      res.status(403).json({ success: false, error: 'Ruxsat yo\'q' });
       return;
     }
 
-    // Get linked parent info
-    let parentInfo = null;
-    const { data: parentData, error: parentError } = await supabaseAdmin
-      .from('parents')
-      .select(`
-        user_id,
-        relation,
-        users:user_id (
-          full_name,
-          email
-        )
-      `)
-      .eq('child_id', id)
-      .single();
-
-    if (!parentError && parentData && parentData.users) {
-      const pData = parentData as any;
-      parentInfo = {
-        user_id: pData.user_id,
-        relation: pData.relation,
-        full_name: pData.users[0].full_name,
-        email: pData.users[0].email,
-      };
+    // Parent info
+    let parentInfo: any = null;
+    if (child.parent_user_id) {
+      const { data: pu } = await supabaseAdmin
+        .from('users').select('id, full_name, email, phone').eq('id', child.parent_user_id).single();
+      if (pu) parentInfo = { ...pu };
     }
-
-    // Fallback: parent linked via children.parent_user_id
-    if (!parentInfo && child.parent_user_id) {
-      const { data: parentUserData } = await supabaseAdmin
-        .from('users')
-        .select('id, full_name, email')
-        .eq('id', child.parent_user_id)
-        .single();
-      if (parentUserData) {
-        parentInfo = {
-          user_id: parentUserData.id,
-          relation: null,
-          full_name: parentUserData.full_name,
-          email: parentUserData.email,
-        };
+    if (!parentInfo) {
+      const { data: pRel } = await supabaseAdmin
+        .from('parents').select('user_id, phone, relation').eq('child_id', id).single();
+      if (pRel?.user_id) {
+        const { data: pu } = await supabaseAdmin
+          .from('users').select('id, full_name, email, phone').eq('id', pRel.user_id).single();
+        if (pu) parentInfo = { ...pu, phone: pRel.phone || pu.phone, relation: pRel.relation };
       }
     }
+
+    // Child login user
+    let childUserInfo: any = null;
+    if (child.child_user_id) {
+      const { data: cu } = await supabaseAdmin
+        .from('users').select('id, full_name, email').eq('id', child.child_user_id).single();
+      if (cu) childUserInfo = cu;
+    }
+
+    // Invitations for login credentials
+    const { data: invitations } = await supabaseAdmin
+      .from('invitations')
+      .select('type, email, temp_password, status, created_at')
+      .eq('child_id', id)
+      .order('created_at', { ascending: false });
+
+    const parentInvite = invitations?.find(i => i.type === 'parent') || null;
+    const childInvite = invitations?.find(i => i.type === 'child') || null;
+
+    // Stats
+    const [reportsRes, sessionsRes, gamesRes] = await Promise.all([
+      supabaseAdmin.from('reports').select('id, mood_score').eq('child_id', id).limit(30),
+      supabaseAdmin.from('sessions').select('id, status').eq('child_id', id),
+      supabaseAdmin.from('game_sessions').select('id, score').eq('child_id', id),
+    ]);
+
+    const reports = reportsRes.data || [];
+    const sessions = sessionsRes.data || [];
+    const games = gamesRes.data || [];
+
+    const avgMood = reports.length > 0
+      ? (reports.reduce((s, r) => s + (r.mood_score || 0), 0) / reports.length).toFixed(1)
+      : null;
+    const avgGameScore = games.length > 0
+      ? Math.round(games.reduce((s, g) => s + (g.score || 0), 0) / games.length)
+      : null;
 
     res.status(200).json({
       success: true,
       data: {
-        child,
-        parent: parentInfo,
+        child: {
+          ...child,
+          child_login: childUserInfo ? {
+            email: childUserInfo.email,
+            full_name: childUserInfo.full_name,
+            temp_password: childInvite?.temp_password || null,
+          } : null,
+          parent: parentInfo ? {
+            id: parentInfo.id,
+            full_name: parentInfo.full_name,
+            email: parentInfo.email,
+            phone: parentInfo.phone || null,
+            relation: parentInfo.relation || null,
+            login: {
+              email: parentInfo.email,
+              temp_password: parentInvite?.temp_password || null,
+            },
+          } : null,
+          stats: {
+            total_reports: reports.length,
+            avg_mood: avgMood,
+            total_sessions: sessions.length,
+            completed_sessions: sessions.filter(s => s.status === 'completed').length,
+            total_games: games.length,
+            avg_game_score: avgGameScore,
+          },
+        },
       },
     });
   } catch (error) {
     console.error('Get child by ID error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Bola ma\'lumotlarini olishda xatolik',
-    });
+    res.status(500).json({ success: false, error: 'Bola ma\'lumotlarini olishda xatolik' });
   }
 };
 
