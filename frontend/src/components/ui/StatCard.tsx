@@ -1,18 +1,21 @@
 import React from 'react'
 
 interface StatCardProps {
-  title: string
-  value: number | string
-  icon: string
-  color: 'blue' | 'green' | 'yellow' | 'red'
-  loading?: boolean
+  title:     string
+  value:     number | string
+  icon:      string
+  color:     'blue' | 'green' | 'yellow' | 'red' | 'teal' | 'purple'
+  subtitle?: string
+  loading?:  boolean
 }
 
-const colorMap = {
-  blue: 'bg-blue-100 text-blue-600',
-  green: 'bg-green-100 text-green-600',
-  yellow: 'bg-yellow-100 text-yellow-600',
-  red: 'bg-red-100 text-red-600',
+const colorMap: Record<string, string> = {
+  blue:   'bg-blue-50 text-blue-600',
+  green:  'bg-green-50 text-green-600',
+  yellow: 'bg-amber-50 text-amber-600',
+  red:    'bg-red-50 text-red-500',
+  teal:   'bg-teal-50 text-teal',
+  purple: 'bg-purple-50 text-purple-600',
 }
 
 export default function StatCard({
@@ -20,25 +23,25 @@ export default function StatCard({
   value,
   icon,
   color,
+  subtitle,
   loading = false,
 }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex items-center gap-4">
-      <div
-        className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl ${colorMap[color]}`}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
+    <div className="bg-white rounded-2xl p-6 card-3d cursor-default border border-gray-100/80 shadow-sm group">
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${colorMap[color] || colorMap.blue} group-hover:scale-110 transition-transform duration-200`}>
+          {icon}
+        </div>
         {loading ? (
-          <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
+          <div className="h-8 w-16 bg-gray-200 rounded-lg animate-shimmer" />
         ) : (
-          <div className="text-3xl font-bold text-gray-800">
+          <span className="text-2xl font-bold text-navy">
             {typeof value === 'number' ? value.toLocaleString() : value}
-          </div>
+          </span>
         )}
-        <div className="text-sm text-gray-500 mt-1">{title}</div>
       </div>
+      <p className="text-sm font-medium text-navy">{title}</p>
+      {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
     </div>
   )
 }
