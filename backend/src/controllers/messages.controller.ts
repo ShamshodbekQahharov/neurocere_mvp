@@ -245,6 +245,9 @@ export const sendMessage = async (
           .single();
         receiverHasAccess = !!childRow;
       }
+    } else {
+      // Other roles (admin etc.) – no chat access
+      receiverHasAccess = false;
     }
 
     if (!receiverHasAccess) {

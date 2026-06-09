@@ -247,6 +247,8 @@ export const getChildById = async (
 
       if (!parentError && parentData) {
         hasAccess = true;
+      } else if (child.parent_user_id === user.id) {
+        hasAccess = true;
       }
     }
 
@@ -281,6 +283,23 @@ export const getChildById = async (
         full_name: pData.users[0].full_name,
         email: pData.users[0].email,
       };
+    }
+
+    // Fallback: parent linked via children.parent_user_id
+    if (!parentInfo && child.parent_user_id) {
+      const { data: parentUserData } = await supabaseAdmin
+        .from('users')
+        .select('id, full_name, email')
+        .eq('id', child.parent_user_id)
+        .single();
+      if (parentUserData) {
+        parentInfo = {
+          user_id: parentUserData.id,
+          relation: null,
+          full_name: parentUserData.full_name,
+          email: parentUserData.email,
+        };
+      }
     }
 
     res.status(200).json({

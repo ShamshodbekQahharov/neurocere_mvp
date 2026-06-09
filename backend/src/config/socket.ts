@@ -94,7 +94,17 @@ export function initializeSocket(httpServer: HttpServer): Server {
             .eq('user_id', user.id)
             .eq('child_id', childId)
             .single();
-          hasAccess = !!parentData;
+          if (parentData) {
+            hasAccess = true;
+          } else {
+            const { data: childRow } = await supabaseAdmin
+              .from('children')
+              .select('id')
+              .eq('id', childId)
+              .eq('parent_user_id', user.id)
+              .single();
+            hasAccess = !!childRow;
+          }
         }
 
         if (!hasAccess) {
@@ -164,7 +174,17 @@ export function initializeSocket(httpServer: HttpServer): Server {
             .eq('user_id', user.id)
             .eq('child_id', childId)
             .single();
-          userHasAccess = !!parentData;
+          if (parentData) {
+            userHasAccess = true;
+          } else {
+            const { data: childRow } = await supabaseAdmin
+              .from('children')
+              .select('id')
+              .eq('id', childId)
+              .eq('parent_user_id', user.id)
+              .single();
+            userHasAccess = !!childRow;
+          }
         }
 
         if (!userHasAccess) {
@@ -188,7 +208,17 @@ export function initializeSocket(httpServer: HttpServer): Server {
             .eq('user_id', receiverId)
             .eq('child_id', childId)
             .single();
-          receiverHasAccess = !!parentData;
+          if (parentData) {
+            receiverHasAccess = true;
+          } else {
+            const { data: childRow } = await supabaseAdmin
+              .from('children')
+              .select('id')
+              .eq('id', childId)
+              .eq('parent_user_id', receiverId)
+              .single();
+            receiverHasAccess = !!childRow;
+          }
         }
 
         if (!receiverHasAccess) {
