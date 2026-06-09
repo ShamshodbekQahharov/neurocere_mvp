@@ -156,12 +156,16 @@ export const createChildWithAccounts = async (
 
     if (childErr) throw new Error('Children profili: ' + childErr.message)
 
-    await supabaseAdmin.from('parents').insert({
+    const { error: parentsInsertErr } = await supabaseAdmin.from('parents').insert({
       user_id: parentAuth.user.id,
       child_id: child.id,
       phone: parent_phone || null,
       relation: 'parent'
     })
+
+    if (parentsInsertErr) {
+      throw new Error('Parents jadvali: ' + parentsInsertErr.message)
+    }
 
     await supabaseAdmin.from('invitations').insert([
       {

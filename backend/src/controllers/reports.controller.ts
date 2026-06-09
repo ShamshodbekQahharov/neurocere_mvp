@@ -53,9 +53,9 @@ export const createReport = async (
     }
 
     // Validation: child belongs to parent (check parents table, then children.parent_user_id)
-    let parentData: { id: string } | null = null;
+    let parentRecordId: string | null = null;
 
-    // 1) Try parents table by user_id + child_id
+    // 1) Try parents table by user_id + child_id (exact match)
     const { data: existingParent } = await supabaseAdmin
       .from('parents')
       .select('id')
@@ -64,49 +64,39 @@ export const createReport = async (
       .single();
 
     if (existingParent) {
-      parentData = existingParent;
+      parentRecordId = existingParent.id;
     } else {
-      // 2) Try parents table by user_id only (same parent, possibly different child stored)
-      const { data: parentByUser } = await supabaseAdmin
-        .from('parents')
+      // 2) Fallback: children.parent_user_id → auto-create parents record
+      const { data: childCheck } = await supabaseAdmin
+        .from('children')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('id', child_id)
+        .eq('parent_user_id', user.id)
         .single();
 
-      if (parentByUser) {
-        parentData = parentByUser;
-      } else {
-        // 3) Fallback: children.parent_user_id (old system) — create parents record
-        const { data: childCheck } = await supabaseAdmin
-          .from('children')
+      if (childCheck) {
+        const { data: newParent, error: insertErr } = await supabaseAdmin
+          .from('parents')
+          .insert({ user_id: user.id, child_id, relation: 'parent' })
           .select('id')
-          .eq('id', child_id)
-          .eq('parent_user_id', user.id)
           .single();
 
-        if (childCheck) {
-          const { data: newParent, error: insertErr } = await supabaseAdmin
+        if (newParent) {
+          parentRecordId = newParent.id;
+        } else if (insertErr) {
+          // Unique violation: record created concurrently — re-fetch
+          const { data: refetched } = await supabaseAdmin
             .from('parents')
-            .insert({ user_id: user.id, child_id, relation: 'parent' })
             .select('id')
+            .eq('user_id', user.id)
+            .eq('child_id', child_id)
             .single();
-
-          if (newParent) {
-            parentData = newParent;
-          } else if (insertErr) {
-            // Unique violation: record may have been created concurrently — re-fetch
-            const { data: refetched } = await supabaseAdmin
-              .from('parents')
-              .select('id')
-              .eq('user_id', user.id)
-              .single();
-            parentData = refetched;
-          }
+          parentRecordId = refetched?.id || null;
         }
       }
     }
 
-    if (!parentData) {
+    if (!parentRecordId) {
       res.status(403).json({
         success: false,
         error: 'Bu bolaga ruxsat yo\'q',
@@ -163,15 +153,16 @@ export const createReport = async (
        .from('reports')
        .insert({
          child_id,
-         parent_id: parentData.id,
+         parent_id: parentRecordId,
          report_date: new Date().toISOString().split('T')[0],
          mood_score,
          speech_notes: speech_notes || null,
          behavior_notes: behavior_notes || null,
-         sleep_hours: sleep_hours || null,
+         sleep_hours: sleep_hours !== undefined ? sleep_hours : null,
          appetite: appetite || null,
-         tasks_completed: tasks_completed || 0,
+         tasks_completed: tasks_completed ?? 0,
          ai_summary: null,
+         is_active: true,
        })
        .select()
        .single();

@@ -512,9 +512,13 @@ let hasAccess = false;
         .eq('user_id', user.id)
         .eq('child_id', id)
         .single();
-      hasAccess = !!parentData;
+      if (parentData) {
+        hasAccess = true;
+      } else if ((child as any).parent_user_id === user.id) {
+        hasAccess = true;
+      }
     } else if (user.role === 'child') {
-      hasAccess = child.child_user_id === user.id;
+      hasAccess = (child as any).child_user_id === user.id;
     }
 
     if (!hasAccess) {

@@ -58,23 +58,20 @@ export default function ParentDashboardPage() {
       const sessionsRes = await api.get('/api/sessions/upcoming')
       const upcoming = (sessionsRes.data?.data?.sessions || []).find((s: any) => s.child_id === childId)
 
-      // Get progress stats
+      let avgMood = 0
       try {
         const progressRes = await api.get(`/api/children/${childId}/progress`)
-        setStats(prev => ({
-          ...prev,
-          avgMood: progressRes.data?.data?.stats?.avg_mood || 0
-        }))
+        avgMood = progressRes.data?.data?.stats?.avg_mood || 0
       } catch {
         // Progress endpoint not available
       }
 
-      setStats(prev => ({
+      setStats({
         latestMood: (reports as any[])[0]?.mood_score || 0,
         weeklyReports: weekly,
         nextSession: upcoming || null,
-        avgMood: stats.avgMood
-      }))
+        avgMood,
+      })
     } catch (error: any) {
       console.error('Dashboard data fetch error:', error)
        setError("Ma'lumotni yuklashda xatolik yuz berdi")
@@ -127,7 +124,7 @@ export default function ParentDashboardPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.latestMood > 0 ? stats.latestMood + '/5' : 'N/A'}
+                {stats.latestMood > 0 ? stats.latestMood + '/10' : 'N/A'}
               </p>
             </div>
           </div>
@@ -168,7 +165,7 @@ export default function ParentDashboardPage() {
             <div className="text-4xl">📈</div>
             <div>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.avgMood > 0 ? stats.avgMood.toFixed(1) + '/5' : 'N/A'}
+                {stats.avgMood > 0 ? stats.avgMood.toFixed(1) + '/10' : 'N/A'}
               </p>
             </div>
           </div>
@@ -185,11 +182,11 @@ export default function ParentDashboardPage() {
               <div key={report.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-4">
                   <div className="text-2xl">
-                    {report.mood_score >= 4 ? '😊' : report.mood_score >= 3 ? '🙂' : report.mood_score >= 2 ? '😐' : '😢'}
+                    {report.mood_score >= 8 ? '😊' : report.mood_score >= 5 ? '🙂' : report.mood_score >= 3 ? '😐' : '😢'}
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">
-                      Kayfiyat: {report.mood_score}/5
+                      Kayfiyat: {report.mood_score}/10
                     </p>
                     <p className="text-sm text-gray-500">
                       {new Date(report.report_date).toLocaleDateString('uz-UZ')}
