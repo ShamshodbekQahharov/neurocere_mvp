@@ -183,7 +183,6 @@ export const sendMessage = async (
         child_id,
         content: content.trim(),
         is_read: false,
-        is_active: true,
       })
       .select()
       .single();
