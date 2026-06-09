@@ -12,8 +12,9 @@ export const connectSocket = (token: string): Socket => {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      transports: ['websocket', 'polling']
+      reconnectionDelay: 2000,
+      timeout: 20000,
+      transports: ['polling', 'websocket'],
     }
   )
 

@@ -14,9 +14,17 @@ let io: Server;
 export function initializeSocket(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        process.env.FRONTEND_URL || '',
+        'https://neurocere-mvp.vercel.app',
+      ].filter(Boolean),
+      methods: ['GET', 'POST'],
       credentials: true,
     },
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
     pingTimeout: 60000,
     pingInterval: 25000,
   });
@@ -227,7 +235,7 @@ export function initializeSocket(httpServer: HttpServer): Server {
         }
 
         // Save message to database
-        const { data: messageData, error: messageError } = await supabaseAdmin
+        const { data: insertedMsg, error: messageError } = await supabaseAdmin
           .from('messages')
           .insert({
             sender_id: user.id,
@@ -237,24 +245,18 @@ export function initializeSocket(httpServer: HttpServer): Server {
             is_read: false,
             is_active: true,
           })
-          .select(`
-            *,
-            sender:sender_id (
-              id,
-              full_name,
-              role
-            ),
-            receiver:receiver_id (
-              id,
-              full_name,
-              role
-            )
-          `)
+          .select()
           .single();
 
         if (messageError) {
           throw messageError;
         }
+
+        const messageData = {
+          ...insertedMsg,
+          sender: { id: user.id, full_name: user.full_name, role: user.role },
+          receiver: { id: receiverData.id, full_name: receiverData.full_name, role: receiverData.role },
+        };
 
         // Create notification for receiver
         await supabaseAdmin.from('notifications').insert({

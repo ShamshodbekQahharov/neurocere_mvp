@@ -15,14 +15,16 @@ export const createReport = async (
   try {
     const {
       child_id,
-      mood_score,
       speech_notes,
       behavior_notes,
-      sleep_hours,
       appetite,
-      tasks_completed,
       notes,
     } = req.body;
+
+    // Explicit type coercion — form data may arrive as strings
+    const mood_score = parseInt(req.body.mood_score);
+    const sleep_hours = req.body.sleep_hours !== undefined ? parseFloat(req.body.sleep_hours) : null;
+    const tasks_completed = req.body.tasks_completed !== undefined ? parseInt(req.body.tasks_completed) : 0;
 
     const user = (req as any).user as User;
 
@@ -105,7 +107,7 @@ export const createReport = async (
     }
 
     // Validation: sleep_hours range 0-24
-    if (sleep_hours !== undefined && (sleep_hours < 0 || sleep_hours > 24)) {
+    if (sleep_hours !== null && sleep_hours !== undefined && (sleep_hours < 0 || sleep_hours > 24)) {
       res.status(400).json({
         success: false,
         error: 'sleep_hours 0 dan 24 gacha bo\'lishi shart',
@@ -288,6 +290,10 @@ export const getReportsByChild = async (
     }
 
     const { data, error, count } = await query.range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('getReportsByChild DB error:', JSON.stringify(error));
+    }
 
     if (error) {
       throw error;

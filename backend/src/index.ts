@@ -23,23 +23,25 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   process.env.FRONTEND_URL || '',
+  process.env.BACKEND_URL || '',
   'https://neurocere-mvp.vercel.app',
 ].filter(Boolean)
 
-app.options('*', cors())
-
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true)
-    }
-    return callback(new Error('CORS ruxsat yoq'))
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.includes(origin)) return callback(null, true)
+    if (process.env.NODE_ENV === 'development') return callback(null, true)
+    console.error('CORS blocked:', origin)
+    return callback(new Error("CORS: ruxsat yo'q"), false)
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   optionsSuccessStatus: 200
 }))
+
+app.options('*', cors())
 
 app.use(helmet())
 app.use(express.json())

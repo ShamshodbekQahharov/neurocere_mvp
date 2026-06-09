@@ -67,30 +67,10 @@ export const getMessages = async (
       return;
     }
 
-    // Build query
+    // Build query — fetch messages without JOIN to avoid FK name issues
     let query = supabaseAdmin
       .from('messages')
-      .select(
-        `
-        id,
-        sender_id,
-        receiver_id,
-        child_id,
-        content,
-        is_read,
-        created_at,
-        sender:users!messages_sender_id_fkey (
-          id,
-          full_name,
-          role
-        ),
-        receiver:users!messages_receiver_id_fkey (
-          id,
-          full_name,
-          role
-        )
-      `
-      )
+      .select('id, sender_id, receiver_id, child_id, content, is_read, created_at', { count: 'exact' })
       .eq('child_id', child_id)
       .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
@@ -100,18 +80,34 @@ export const getMessages = async (
       query = query.lt('id', before);
     }
 
-    const { data: messages, error, count } = await query;
+    const { data: rawMessages, error, count } = await query;
 
     if (error) {
       throw error;
     }
 
-    const hasMore = !before && count && count > limit;
+    // Enrich with user info
+    const userIds = [...new Set((rawMessages || []).flatMap((m: any) => [m.sender_id, m.receiver_id]))];
+    const { data: usersData } = await supabaseAdmin
+      .from('users')
+      .select('id, full_name, role')
+      .in('id', userIds);
+
+    const usersMap: Record<string, any> = {};
+    (usersData || []).forEach((u: any) => { usersMap[u.id] = u; });
+
+    const messages = (rawMessages || []).map((m: any) => ({
+      ...m,
+      sender: usersMap[m.sender_id] || null,
+      receiver: usersMap[m.receiver_id] || null,
+    }));
+
+    const hasMore = !before && !!count && count > limit;
 
     res.status(200).json({
       success: true,
       data: {
-        messages: messages?.reverse() || [],
+        messages: messages.reverse(),
         has_more: hasMore,
       },
     });
@@ -259,7 +255,7 @@ export const sendMessage = async (
     }
 
     // Save message to database
-    const { data: messageData, error: messageError } = await supabaseAdmin
+    const { data: insertedMessage, error: messageError } = await supabaseAdmin
       .from('messages')
       .insert({
         sender_id: user.id,
@@ -269,26 +265,25 @@ export const sendMessage = async (
         is_read: false,
         is_active: true,
       })
-      .select(
-        `
-        *,
-        sender:sender_id (
-          id,
-          full_name,
-          role
-        ),
-        receiver:receiver_id (
-          id,
-          full_name,
-          role
-        )
-      `
-      )
+      .select()
       .single();
 
     if (messageError) {
+      console.error('Message insert error:', JSON.stringify(messageError));
       throw messageError;
     }
+
+    // Fetch sender and receiver separately to avoid FK name issues
+    const [{ data: senderData }, { data: receiverInfo }] = await Promise.all([
+      supabaseAdmin.from('users').select('id, full_name, role').eq('id', user.id).single(),
+      supabaseAdmin.from('users').select('id, full_name, role').eq('id', receiver_id).single(),
+    ]);
+
+    const messageData = {
+      ...insertedMessage,
+      sender: senderData,
+      receiver: receiverInfo,
+    };
 
     // Create notification for receiver
     await supabaseAdmin.from('notifications').insert({
